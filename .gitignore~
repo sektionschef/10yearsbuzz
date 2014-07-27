@@ -1,0 +1,11 @@
+Archiv\ Check/
+bmd_input/
+export/
+
+## filetypes
+*.csv
+*.pdf
+*.json
+*.xls
+*.xlsx
+*.ods
