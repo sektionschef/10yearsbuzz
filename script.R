@@ -5,6 +5,7 @@ library(reshape2) # load reshape - bringing holy pivot table functionality to R
 library(plyr)
 #library(zoo) # for month of year calculation - at wiederholfaktura
 
+######################### LADEN UND FORMATIEREN ############################### 
 # Input Zeiten laden
 leistungen <- read.csv(file="input/volle_leistung.csv",head=TRUE,sep=";")
 names(leistungen) <- sub(" ", ".", names(leistungen)) ## replace spaces in column names
@@ -15,9 +16,6 @@ leistungen$Leistungsdatum <- as.Date(leistungen$Leistungsdatum, "%d.%m.%Y")
 ## Stunden in Millisekunden umwandeln - "03:58"
 leistungen$duration <- as.numeric(sapply(strsplit(as.character(leistungen$Std),":"), "[",1))*60*60*1000+as.numeric(sapply(strsplit(as.character(leistungen$Std),":"), "[",2))*60*1000 # format in millisekunden umwandeln
 leistungen <- leistungen[!is.na("Tät.Nr.Art.Nr"),] ## leere Tätigkeitsfelder rausstreichen
-
-#check <- dcast(leistungen,Tät.Nr.Art.Nr~.,sum,value.var="duration",na.rm=TRUE) #debug
-
 
 ## Sample Data zum Ausprobieren
 leistungen$begin <- sample(0:59, nrow(leistungen), replace=T)
@@ -33,9 +31,10 @@ leistungen$end <- sample(0:59, nrow(leistungen), replace=T)
 
 # Reduktion der Daten
 leistungen <- leistungen[,c("Tät.Nr.Art.Nr","duration","begin","end")]
+colnames(leistungen)[1] <- "Tätigkeit" #rename
 
 
-# Analyse pro Minute
+############### Analyse pro Minute ################
 for (i in 0:59 ) {
 	column  <- as.character(i) # zusätzliche Spalten pro Minute anlegen
 	leistungen[,column] <- ifelse( 
@@ -53,50 +52,30 @@ for (i in 0:59 ) {
 	)
 }
 #leistungen[1:5,]
-leistungen <- melt(leistungen, id.vars=c("Tät.Nr.Art.Nr","duration","begin","end"), variable.name = "Minute", value.name = "DrinnenKZ") #melt 
-check <- dcast(leistungen,Minute+Tät.Nr.Art.Nr~"Anzahl",sum,value.var="DrinnenKZ",na.rm=TRUE)
-#plot(check[check$Minute==0,"Tät.Nr.Art.Nr"],check[check$Minute==0,"Anzahl"]) ##debug
+leistungen <- melt(leistungen, id.vars=c("Tätigkeit","duration","begin","end"), variable.name = "Minute", value.name = "DrinnenKZ") #melt minuten columns in 
+check <- dcast(leistungen,Minute+Tätigkeit~"Anzahl",sum,value.var="DrinnenKZ",na.rm=TRUE)
+#plot(check[check$Minute==0,"Tätigkeit"],check[check$Minute==0,"Anzahl"]) ##debug
 
 #Summe pro Minute & Normalisierung
 for (i in unique(check$Minute)) {
-	check[check$Minute==i,"Summe"] <- sum(check[check$Minute==i,"Anzahl"])
-	check[check$Minute==i,"Normalisation.factor"] <- 100/check[check$Minute==i,"Summe"]
+	check[check$Minute==i,"Summe"] <- sum(check[check$Minute==i,"Anzahl"]) #Summe pro Minute
+	check[check$Minute==i,"Normalisation.factor"] <- 100/check[check$Minute==i,"Summe"] #Normalisierung mit der Summe auf 100
 }
 check$normalized <- check[,"Anzahl"]*check[,"Normalisation.factor"]
 
-## Durchschnitt - DEBUG 
-#average <- dcast(leistungen,Tät.Nr.Art.Nr~"Anzahl",sum,value.var="DrinnenKZ",na.rm=TRUE) #average$Anzahl  <-  average$Anzahl/60 ### größe rechtecke
+
+## Durchschnitt - for DEBUG 
+#average <- dcast(leistungen,Tätigkeit~"Anzahl",sum,value.var="DrinnenKZ",na.rm=TRUE) #average$Anzahl  <-  average$Anzahl/60 ### größe rechtecke
 #cast(year[year$drinnen_kz == 1,], Project~.) #Anzahl der Zeiten
 
 
-
-######### NICE INPUT ###################
-# http://blog.revolutionanalytics.com/2009/07/because-its-friday-the-knapsack-problem.html 
-appetizer.solution <- local (
-function (target) {
-  app <- c(2.15, 2.75, 3.35, 3.55, 4.20, 5.80)
-  r <- 2L
-  repeat {
-	c <- gtools::combinations(length(app), r=r, v=app, repeats.allowed=TRUE)
-	s <- rowSums(c)
-	if ( all(s > target) ) {
-	  print("No solution found")
-	  break
-	}
-	x <- which( abs(s-target) < 1e-4 )
-	if ( length(x) > 0L ) {
-	  print("Solution found")
-	  print(c[x,])
-	  break
-	}
-	r <- r + 1L #L tells it to define it as an integer, which makes it faster
-  }
-})
-#######################################
-
+############ Check for best match #################
 # combinationen rechen pro kategorie (ohne Wiederholung, mit 0 der anderen)
 # optimieren der differenz
 # flächen aus dem pool für zukünftige kategorien rausschmeißen
+
+#hypothese: die lösung mit der niedrigsten anzahl an flächen liefert die optimale fläche
+# generell muss man isch entscheiden, auf was man optimiert: auf die gesamte fläche oder die einzelnen matches. 
 
 target <- 30
 sepp <- c(50,30,18,12)
