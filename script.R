@@ -3,7 +3,94 @@
 ###### LIBRARIES
 library(reshape2) # load reshape - bringing holy pivot table functionality to R
 library(plyr)
-#library(zoo) # for month of year calculation - at wiederholfaktura
+
+
+
+####temporary stuff
+
+timeboard <- read.csv(file="timeboard.csv",head=TRUE)
+#timeboard[1:6,]
+
+target_example <- 32
+
+#areas <- c(50,30,18,12,32,44,2,6,9,45,32,36,19,23,27,29,15,11,17,39,28,23,11,19,1,3,8,33,23,1,5,9,24,14,11,9,44,21)
+
+areas <- data.frame(size = c(50,30,18,12,32,44,2,6,9,45,32,36,19,23,27,29,15,11,17,39,28,23,11,19,1,3,8,33,23,1,5,9,24,14,11,9,44,21))
+areas$id <- paste("e",1:length(areas$size),sep="")
+write.csv(areas,"areas.csv")
+#areas
+
+
+lightup <- data.frame(Minute=unique(timeboard$Minute)) #create the plan which element to light up in each minute
+lightup[,as.character(areas$id)] <- 0 ## fill it up
+#lightup[1:7,]
+
+
+knappsackn <- function(target,areas,areas.id) {
+	#combinations
+	possible.combinations <- append(areas,rep(0, 4)) #add zero so it repeats while the other stuff is just coming up once. number of repeats means how many areas can be selected, making it more and more complex.
+
+	possible.combinations <- gtools::combinations(length(possible.combinations), 4, v=possible.combinations, set=FALSE, repeats.allowed=FALSE) ## second parameter is the dimensions (number of elements to add up), faster to exand.grid
+
+	possible.combinations <- unique(possible.combinations) # remove duplicate rows, duplicates because of the 0s
+	#maty ##debug
+
+	#get the index of the minima
+	diff <- abs(target-rowSums(possible.combinations)) #the absolute difference for each combination
+	min.index <- which(diff == min(diff)) #index for the minima solution
+	#min.index
+	X <- possible.combinations[min.index,] ## all solutions for minimal difference between area and time value
+	#X ##debug
+
+	selection <- X[which(rowSums(X!=0) == max(rowSums(X!=0)))[1],] #rowSums counts numbers not zero; select the first row that meets the condition of having the fewest zeroes.
+
+
+	areas.removed <- areas # initialize areas.removed in order to remove from it each time the loop is run
+	areas.selected <- vector()
+	for (i in 1:length(selection)) { ## remove the selected element for this category for the next iteration of the next category
+		areas.removed <- areas.removed[-which(areas.removed==selection[i])[1]] #remove just once and only the first time found. if two same sized areas are part of the same solution both are removed.
+		areas.selected[length(areas.selected)+1] <- areas.id[which(areas==selection[i])[1]]
+	}
+	areas.selected	
+}
+
+
+normzahl.per.minute <- sapply(unique(timeboard$Minute), function(i) timeboard[timeboard$Minute==i,"Normzahl"]) # Normzahl per Minute per category
+#length(normzahl.per.minute)## all the minutes
+#normzahl.per.minute[[1]][1:length(normzahl.per.minute[[1]])] ##select the first minute
+
+
+#debug(knappsackn)
+for (i in 1:length(normzahl.per.minute)) { #loop since knappsackn function needs one value not a vector like in lapply
+	for (a in 1:length(normzahl.per.minute[[i]])) {
+		#print(normzahl.per.minute[[i]][a])
+		selected.elements <- knappsackn(normzahl.per.minute[[i]][a],areas$size,areas$id)
+		#lightup[i,selected.elemenst] <- 1
+		print(selected.elements)
+
+		print(paste("Minute: ",timeboard$Minute[i+a-1]," - Normzahl der ",a,". Kategorie: ",normzahl.per.minute[[i]][a]," ausgewähltes Element: ",selected.elements,sep=""))
+	}
+}
+#timeboard$Normzahl
+
+afsasf
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ######################### LADEN UND FORMATIEREN ############################### 
 # Input Zeiten laden
@@ -21,22 +108,13 @@ leistungen$Leistungsdatum <- as.Date(leistungen$Leistungsdatum, "%d.%m.%Y")
 leistungen$duration <- as.numeric(sapply(strsplit(as.character(leistungen$Std),":"), "[",1))*60*60*1000+as.numeric(sapply(strsplit(as.character(leistungen$Std),":"), "[",2))*60*1000 # format in millisekunden umwandeln
 leistungen <- leistungen[!is.na("Tät.Nr.Art.Nr"),] ## leere Tätigkeitsfelder rausstreichen
 
-## Sample Data zum Ausprobieren
-#leistungen$begin <- sample(0:59, nrow(leistungen), replace=T)
-#leistungen$end <- sample(0:59, nrow(leistungen), replace=T)
-
-## Uhrzeiten verstehen
-#leistungen$begin <- format(leistungen$Von.Zeit, format="%H:%M")
-#leistungen$end <- format(leistungen$Bis.Zeit, format="%H:%M")
-#leistungen$begin <- as.POSIXct(leistungen$Von.Zeit, format="%H:%M") ## posixct nimmt das aktuelle Datum, wenn nichts angegeben ist
-#leistungen$end <- as.POSIXct(leistungen$Bis.Zeit, format="%H:%M")
+## convert time to minutes
 leistungen$begin <- as.numeric(sapply(strsplit(as.character(leistungen$Von.Zeit),":"), "[",1))*60+as.numeric(sapply(strsplit(as.character(leistungen$Von.Zeit),":"), "[",2)) #Stunden in Minuten umrechnen 
 leistungen$end <- as.numeric(sapply(strsplit(as.character(leistungen$Bis.Zeit),":"), "[",1))*60+as.numeric(sapply(strsplit(as.character(leistungen$Bis.Zeit),":"), "[",2)) #Stunden in Minuten umrechnen 
 
 # Reduktion der Daten
 leistungen <- leistungen[,c("Tät.Nr.Art.Nr","begin","end")]
 colnames(leistungen)[1] <- "Tätigkeit" #rename
-
 
 #nrow(leistungen)
 leistungen <- leistungen[!is.na(leistungen$begin),]
@@ -45,11 +123,12 @@ leistungen <- leistungen[!is.na(leistungen$Tätigkeit),]
 #nrow(leistungen)
 
 
-############### Analyse pro Minute ################
+############### Analysis per minute ################
 
 leistungen <- leistungen[which(leistungen$begin != leistungen$end),] # remove entries where start time equals end time, they ruin everything
 #leistungen <- leistungen[which(leistungen$begin >= leistungen$end),]##debug
-leistungen$diff <- ifelse(leistungen$begin <= leistungen$end,
+
+leistungen$diff <- ifelse(leistungen$begin <= leistungen$end, ## difference between start and end. if the task extends midnight, we have to deal with it separately
 			  leistungen$end - leistungen$begin+1,
 			  1439 - leistungen$begin + leistungen$end +1+1 # 2 times +1 for correcting the substraction
 			  )
@@ -74,33 +153,37 @@ leistungen$Kategorie <- factor(leistungen$Kategorie) #removing the "" factor
 
 ## Aggregate
 timeboard <- dcast(leistungen,Minute+Kategorie~"Anzahl")
-sum.timeboard <- dcast(leistungen, Minute~"Summe") # sum per minuted, needed for normalisation. beware: leistungen only contains values with categories. 
-#plot(sum.timeboard$Minute/60,sum.timeboard$Summe) ##debug
+sum.timeboard <- dcast(leistungen, Minute~"Summe") # sum per minute, needed for normalisation. beware: leistungen only contains values with categories. 
 tätboard <- dcast(leistungen,Kategorie~"Anzahl")
-#write.csv(tätboard,"tätboard.csv")
+#write.csv(tätboard,"tätboard.csv") ##debug
 
 
 #################### Normalization to sum of each minute ######################
 sum.timeboard$normalize.factor <- 100/sum.timeboard$Summe #Normalizing the sum to 100
-
 timeboard <- merge(timeboard,sum.timeboard,by.x="Minute",by.y="Minute",all.x=TRUE) #merge in order to normalize
 timeboard$Normzahl <- timeboard$Anzahl * timeboard$normalize.factor
 
+write.csv(timeboard,"timeboard.csv")
+asfasfaf
+
+####### Graphical Output ###############
+# the whole day
+#jpeg(paste("/home/stefan/Desktop/export/agg/day.jpg"), width=800, height=800)
+#plot(sum.timeboard$Minute/60,sum.timeboard$Summe) ##debug
+#dev.off()
 
 
-for (x in levels(timeboard$Kategorie)) {
-	jpeg(paste("/home/stefan/Desktop/export/agg/",x,".jpg"), width=800, height=800)
-	plot(timeboard$Minute[timeboard$Kategorie==x]/60,timeboard$Normzahl[timeboard$Kategorie==x], main=x, ylim=c(0,40)) ##debug
-	dev.off()
-}
+#for (x in levels(timeboard$Kategorie)) {
+#	jpeg(paste("/home/stefan/Desktop/export/agg/",x,".jpg"), width=800, height=800)
+#	plot(timeboard$Minute[timeboard$Kategorie==x]/60,timeboard$Normzahl[timeboard$Kategorie==x], main=x, ylim=c(0,40)) ##debug
+#	dev.off()
+#}
 
-for (i in 1:1439) {
-	jpeg(paste("/home/stefan/Desktop/export/",i,".jpg"), width=800, height=800)
-	plot(timeboard[timeboard$Minute==i,"Kategorie"],timeboard[timeboard$Minute==i, "Normzahl"],main=i, ylim=c(0,40))
-	dev.off()
-}
-asdfaf
-
+#for (i in 1:1439) {
+#	jpeg(paste("/home/stefan/Desktop/export/",i,".jpg"), width=800, height=800)
+#	plot(timeboard[timeboard$Minute==i,"Kategorie"],timeboard[timeboard$Minute==i, "Normzahl"],main=i, ylim=c(0,40))
+#	dev.off()
+#}
 
 
 ############ Check for best match #################
@@ -111,13 +194,16 @@ asdfaf
 #hypothese: die lösung mit der niedrigsten anzahl an flächen liefert die optimale fläche
 # generell muss man isch entscheiden, auf was man optimiert: auf die gesamte fläche oder die einzelnen matches. 
 
-target <- 30
-sepp <- c(50,30,18,12)
+target <- timeboard[timeboard$Minute==550 & timeboard$Kategorie=="Consulting","Normzahl"] 
+#target <- 30
+
+sepp <- c(50,30,18,12,32,44,2,6,9,45,32,36,19,23,27,29,15,11,17,39,28,23,11,19,1,3,8)
+length(sepp)
 
 #combinations
 sepp <- append(sepp,rep(0, length(sepp))) #add zero so it repeats while the other stuff is just coming up once. number of zeros is the same of the numbers of areas 
 #gtools::combinations(length(sepp), r=2L, v=sepp, repeats.allowed=TRUE)
-maty <- gtools::combinations(length(sepp), 4, v=sepp, set=FALSE, repeats.allowed=FALSE)
+maty <- gtools::combinations(length(sepp), 4, v=sepp, set=FALSE, repeats.allowed=FALSE) ## 4 is the size of the vector
 maty <- unique(maty) # remove duplicate rows, duplicates because of the 0s
 #maty ##debug
 
@@ -127,9 +213,9 @@ min.index <- which(diff == min(diff)) #index for the minima solution
 #min.index
 X <- maty[min.index,] ##selected solutions for min
 X
-sepp <- which(X!=0,arr.ind = T) ## which cells fit the condition, result is a matrix
-sepp
-X[sepp]
-X[sepp[1,]]
+#sepp <- which(X!=0,arr.ind = T) ## which cells fit the condition, result is a matrix
+#sepp
+#X[sepp]
+#X[sepp[1,]]
 
-X[sepp[2,]]
+#X[sepp[2,]]
