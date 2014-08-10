@@ -17,62 +17,68 @@ target_example <- 32
 
 areas <- data.frame(size = c(50,30,18,12,32,44,2,6,9,45,32,36,19,23,27,29,15,11,17,39,28,23,11,19,1,3,8,33,23,1,5,9,24,14,11,9,44,21))
 areas$id <- paste("e",1:length(areas$size),sep="")
-write.csv(areas,"areas.csv")
+#write.csv(areas,"areas.csv")
 #areas
 
 
-lightup <- data.frame(Minute=unique(timeboard$Minute)) #create the plan which element to light up in each minute
-lightup[,as.character(areas$id)] <- 0 ## fill it up
+
+
+
+lightup <- timeboard[,c("Minute","Kategorie")] #where the lights will be placed
+lightup[,as.character(areas$id)] <- 0 ## fill it up with ids of areas
 #lightup[1:7,]
 
 
-knappsackn <- function(target,areas,areas.id) {
-	#combinations
-	possible.combinations <- append(areas,rep(0, 4)) #add zero so it repeats while the other stuff is just coming up once. number of repeats means how many areas can be selected, making it more and more complex.
+knappsackn <- function(target,areas.removed) {
 
-	possible.combinations <- gtools::combinations(length(possible.combinations), 4, v=possible.combinations, set=FALSE, repeats.allowed=FALSE) ## second parameter is the dimensions (number of elements to add up), faster to exand.grid
+	## create all possible combinations
+	number.areas.for.combinations <- 4
+	possible.combinations <- append(areas.removed$size,rep(0, number.areas.for.combinations)) #add zero so it repeats while the other stuff is just coming up once. number of repeats means how many areas can be selected, making it more and more complex.
 
-	possible.combinations <- unique(possible.combinations) # remove duplicate rows, duplicates because of the 0s
-	#maty ##debug
+	possible.combinations <- gtools::combinations(length(possible.combinations), number.areas.for.combinations, v=possible.combinations, set=FALSE, repeats.allowed=FALSE) ## second parameter is the dimensions (number of elements to add up), faster to exand.grid
 
+	#possible.combinations <- unique(possible.combinations) # takes a lot of time - remove duplicate rows, duplicates because of the 0s
+	possible.combinations <- possible.combinations[-which(rowSums(possible.combinations!=0)==0),] ##remove combinations full of zeroes. there must be at least one area.
+
+	
 	#get the index of the minima
 	diff <- abs(target-rowSums(possible.combinations)) #the absolute difference for each combination
-	min.index <- which(diff == min(diff)) #index for the minima solution
-	#min.index
-	X <- possible.combinations[min.index,] ## all solutions for minimal difference between area and time value
+	solutions <- possible.combinations[which(diff == min(diff)),] ## all solutions for minimal difference between area and time value
 	#X ##debug
 
-	selection <- X[which(rowSums(X!=0) == max(rowSums(X!=0)))[1],] #rowSums counts numbers not zero; select the first row that meets the condition of having the fewest zeroes.
+	zero.count <- ifelse(nrow(solutions)>1,apply(solutions,1,function(s) sum(s!=0)),1) # the condition equals 0 or 1, so the sum counts the elements not zero. if there is jsut one row, this one is taken
 
+	selection <- solutions[which(zero.count == max(zero.count))[1],] #select the first row that meets the max.  
+	selection <- selection[selection!=0] # remove the zeroes, if there are some.
 
-	areas.removed <- areas # initialize areas.removed in order to remove from it each time the loop is run
-	areas.selected <- vector()
 	for (i in 1:length(selection)) { ## remove the selected element for this category for the next iteration of the next category
-		areas.removed <- areas.removed[-which(areas.removed==selection[i])[1]] #remove just once and only the first time found. if two same sized areas are part of the same solution both are removed.
-		areas.selected[length(areas.selected)+1] <- areas.id[which(areas==selection[i])[1]]
+		areas.selected[length(areas.selected)+1] <- areas.removed$id[which(areas.removed$size==selection[i])[1]] # save the id of the used area
+		areas.removed <- areas.removed[-which(areas.removed$size==selection[i])[1],] #remove just once and only the first time found. if two same sized areas are part of the same solution both are removed.
 	}
-	areas.selected	
+	list(areas.selected,areas.removed) # return two vectors as list	
 }
 
 
-normzahl.per.minute <- sapply(unique(timeboard$Minute), function(i) timeboard[timeboard$Minute==i,"Normzahl"]) # Normzahl per Minute per category
-#length(normzahl.per.minute)## all the minutes
-#normzahl.per.minute[[1]][1:length(normzahl.per.minute[[1]])] ##select the first minute
-
-
 #debug(knappsackn)
-for (i in 1:length(normzahl.per.minute)) { #loop since knappsackn function needs one value not a vector like in lapply
-	for (a in 1:length(normzahl.per.minute[[i]])) {
-		#print(normzahl.per.minute[[i]][a])
-		selected.elements <- knappsackn(normzahl.per.minute[[i]][a],areas$size,areas$id)
-		#lightup[i,selected.elemenst] <- 1
-		print(selected.elements)
+#timeboard[timeboard$Minute==361,]
 
-		print(paste("Minute: ",timeboard$Minute[i+a-1]," - Normzahl der ",a,". Kategorie: ",normzahl.per.minute[[i]][a]," ausgewähltes Element: ",selected.elements,sep=""))
+#for (i in 361:362) { #debug 
+for (i in 1:length(unique(timeboard$Minute))) { # per Minute - loop since knappsackn function needs one value not a vector like in lapply
+	areas.removed <- areas # initialize areas.removed in order to remove from it each time the loop is run
+	areas.selected <- vector() # create new vector for the selected elements
+	
+	for (a in 1:length(timeboard$Kategorie[timeboard$Minute==i-1])) { # -1 because minute starts at 0
+	       	returned.list <- knappsackn(timeboard[timeboard$Minute==i-1,"Normzahl"][[a]],areas.removed)
+		selected.elements <- as.vector(returned.list[[1]])
+		lightup[lightup$Minute==i-1,][a,selected.elements] <- 1
+		areas.removed <- as.vector(returned.list[[2]])
+		print(paste("Minute: ",i-1," - Normzahl der ",a,". Kategorie: ",timeboard[timeboard$Minute==i-1,"Normzahl"][[a]]," ausgewähltes Element: ",selected.elements,sep="")) ##debug
 	}
 }
 #timeboard$Normzahl
 
+write.csv(lightup[1:4,],"lightup.csv")
+#MInute 360 - Normzahl der 1. Kategorie 9.859.. - in max(zero.count) no non-missing arguments to max; returning -Inf
 afsasf
 
 
