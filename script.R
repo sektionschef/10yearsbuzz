@@ -5,98 +5,26 @@ library(reshape2) # load reshape - bringing holy pivot table functionality to R
 library(plyr)
 
 
-
 ####temporary stuff
-
-timeboard <- read.csv(file="timeboard.csv",head=TRUE)
+#timeboard <- read.csv(file="timeboard.csv",head=TRUE) ##debug shortcut
 #timeboard[1:6,]
 
-target_example <- 32
+lightup <- read.csv(file="lightup.csv",head=TRUE) ##debug shortcut
+#lightup[1:4,]
 
-#areas <- c(50,30,18,12,32,44,2,6,9,45,32,36,19,23,27,29,15,11,17,39,28,23,11,19,1,3,8,33,23,1,5,9,24,14,11,9,44,21)
+#target_example <- 32 ##target for knappsack
 
 areas <- data.frame(size = c(50,30,18,12,32,44,2,6,9,45,32,36,19,23,27,29,15,11,17,39,28,23,11,19,1,3,8,33,23,1,5,9,24,14,11,9,44,21))
 areas$id <- paste("e",1:length(areas$size),sep="")
 #write.csv(areas,"areas.csv")
-#areas
 
 
+lightup[lightup$Kategorie == "Consulting",4:ncol(lightup)] <- ifelse(lightup[lightup$Kategorie == "Consulting",4:ncol(lightup)]==1,"#saudu",NA)
 
+#lightup[,4:ncol(lightup)==1] 
 
-
-lightup <- timeboard[,c("Minute","Kategorie")] #where the lights will be placed
-lightup[,as.character(areas$id)] <- 0 ## fill it up with ids of areas
-#lightup[1:7,]
-
-
-knappsackn <- function(target,areas.removed) {
-
-	## create all possible combinations
-	number.areas.for.combinations <- 4
-	possible.combinations <- append(areas.removed$size,rep(0, number.areas.for.combinations)) #add zero so it repeats while the other stuff is just coming up once. number of repeats means how many areas can be selected, making it more and more complex.
-
-	possible.combinations <- gtools::combinations(length(possible.combinations), number.areas.for.combinations, v=possible.combinations, set=FALSE, repeats.allowed=FALSE) ## second parameter is the dimensions (number of elements to add up), faster to exand.grid
-
-	#possible.combinations <- unique(possible.combinations) # takes a lot of time - remove duplicate rows, duplicates because of the 0s
-	possible.combinations <- possible.combinations[-which(rowSums(possible.combinations!=0)==0),] ##remove combinations full of zeroes. there must be at least one area.
-
-	
-	#get the index of the minima
-	diff <- abs(target-rowSums(possible.combinations)) #the absolute difference for each combination
-	solutions <- possible.combinations[which(diff == min(diff)),] ## all solutions for minimal difference between area and time value
-	#X ##debug
-
-	zero.count <- ifelse(nrow(solutions)>1,apply(solutions,1,function(s) sum(s!=0)),1) # the condition equals 0 or 1, so the sum counts the elements not zero. if there is jsut one row, this one is taken
-
-	selection <- solutions[which(zero.count == max(zero.count))[1],] #select the first row that meets the max.  
-	selection <- selection[selection!=0] # remove the zeroes, if there are some.
-
-	for (i in 1:length(selection)) { ## remove the selected element for this category for the next iteration of the next category
-		areas.selected[length(areas.selected)+1] <- areas.removed$id[which(areas.removed$size==selection[i])[1]] # save the id of the used area
-		areas.removed <- areas.removed[-which(areas.removed$size==selection[i])[1],] #remove just once and only the first time found. if two same sized areas are part of the same solution both are removed.
-	}
-	list(areas.selected,areas.removed) # return two vectors as list	
-}
-
-
-#debug(knappsackn)
-#timeboard[timeboard$Minute==361,]
-
-#for (i in 361:362) { #debug 
-for (i in 1:length(unique(timeboard$Minute))) { # per Minute - loop since knappsackn function needs one value not a vector like in lapply
-	areas.removed <- areas # initialize areas.removed in order to remove from it each time the loop is run
-	areas.selected <- vector() # create new vector for the selected elements
-	
-	for (a in 1:length(timeboard$Kategorie[timeboard$Minute==i-1])) { # -1 because minute starts at 0
-	       	returned.list <- knappsackn(timeboard[timeboard$Minute==i-1,"Normzahl"][[a]],areas.removed)
-		selected.elements <- as.vector(returned.list[[1]])
-		lightup[lightup$Minute==i-1,][a,selected.elements] <- 1
-		areas.removed <- as.vector(returned.list[[2]])
-		print(paste("Minute: ",i-1," - Normzahl der ",a,". Kategorie: ",timeboard[timeboard$Minute==i-1,"Normzahl"][[a]]," ausgewähltes Element: ",selected.elements,sep="")) ##debug
-	}
-}
-#timeboard$Normzahl
-
-write.csv(lightup[1:4,],"lightup.csv")
-#MInute 360 - Normzahl der 1. Kategorie 9.859.. - in max(zero.count) no non-missing arguments to max; returning -Inf
-afsasf
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+lightup[1:9,]
+asdfasf
 
 ######################### LADEN UND FORMATIEREN ############################### 
 # Input Zeiten laden
@@ -170,7 +98,6 @@ timeboard <- merge(timeboard,sum.timeboard,by.x="Minute",by.y="Minute",all.x=TRU
 timeboard$Normzahl <- timeboard$Anzahl * timeboard$normalize.factor
 
 write.csv(timeboard,"timeboard.csv")
-asfasfaf
 
 ####### Graphical Output ###############
 # the whole day
@@ -192,36 +119,59 @@ asfasfaf
 #}
 
 
-############ Check for best match #################
-# combinationen rechen pro kategorie (ohne Wiederholung, mit 0 der anderen)
-# optimieren der differenz
-# flächen aus dem pool für zukünftige kategorien rausschmeißen
 
-#hypothese: die lösung mit der niedrigsten anzahl an flächen liefert die optimale fläche
-# generell muss man isch entscheiden, auf was man optimiert: auf die gesamte fläche oder die einzelnen matches. 
+######### create the output format of the solution #########
+lightup <- timeboard[,c("Minute","Kategorie")] #where the lights will be placed
+lightup[,as.character(areas$id)] <- 0 ## fill it up with ids of areas
+#lightup[1:7,]
 
-target <- timeboard[timeboard$Minute==550 & timeboard$Kategorie=="Consulting","Normzahl"] 
-#target <- 30
 
-sepp <- c(50,30,18,12,32,44,2,6,9,45,32,36,19,23,27,29,15,11,17,39,28,23,11,19,1,3,8)
-length(sepp)
+########### Knappsack function - allocating areas to categories #################
+knappsackn <- function(target,areas.removed) { #finding optimal areas for each category for each minute, maximizing for the best match of individual categories and areas (not the smallest difference for each minute) and maximizing the amount of areas used.
 
-#combinations
-sepp <- append(sepp,rep(0, length(sepp))) #add zero so it repeats while the other stuff is just coming up once. number of zeros is the same of the numbers of areas 
-#gtools::combinations(length(sepp), r=2L, v=sepp, repeats.allowed=TRUE)
-maty <- gtools::combinations(length(sepp), 4, v=sepp, set=FALSE, repeats.allowed=FALSE) ## 4 is the size of the vector
-maty <- unique(maty) # remove duplicate rows, duplicates because of the 0s
-#maty ##debug
+	## create all possible combinations
+	number.areas.for.combinations <- 4 ##more for better results
+	possible.combinations <- append(areas.removed$size,rep(0, number.areas.for.combinations)) #add zero so it repeats while the other stuff is just coming up once. necessary to be able to choose less than 4 areas. number of areas means how many areas can be selected, making it more and more complex.
 
-#get the index of the minima
-diff <- abs(target-rowSums(maty)) #the absolute difference for each combination
-min.index <- which(diff == min(diff)) #index for the minima solution
-#min.index
-X <- maty[min.index,] ##selected solutions for min
-X
-#sepp <- which(X!=0,arr.ind = T) ## which cells fit the condition, result is a matrix
-#sepp
-#X[sepp]
-#X[sepp[1,]]
+	possible.combinations <- gtools::combinations(length(possible.combinations), number.areas.for.combinations, v=possible.combinations, set=FALSE, repeats.allowed=FALSE) ## all combinations for the areas, second parameter is the dimensions (number of elements to add up), faster to exand.grid
 
-#X[sepp[2,]]
+	#possible.combinations <- unique(possible.combinations) # takes a lot of time - remove duplicate rows, duplicates because of the added 0s
+	possible.combinations <- possible.combinations[-which(rowSums(possible.combinations!=0)==0),] ##remove combinations full of zeroes. there must be at least one area chosen.
+	
+	#get the index of the minima
+	diff <- abs(target-rowSums(possible.combinations)) #the absolute difference for each combination and the target
+	solutions <- possible.combinations[which(diff == min(diff)),] ## all solutions for minimal difference between area and time value
+	#X ##debug
+
+	zero.count <- ifelse(nrow(solutions)>1,apply(solutions,1,function(s) sum(s!=0)),1) # the condition equals 0 or 1, so the sum counts the elements not zero. if there is jsut one row, this one is taken
+
+	selection <- solutions[which(zero.count == max(zero.count))[1],] #select the first row that meets the criteria of having the least zeroes, (min of zeroes)  
+	selection <- selection[selection!=0] # remove the zeroes, if there are some. zero means no area.
+
+	for (i in 1:length(selection)) { ## remove the selected element chosen for the current category so the next iteration can't chose the same area again.
+		areas.selected[length(areas.selected)+1] <- areas.removed$id[which(areas.removed$size==selection[i])[1]] # save the id of the used area
+		areas.removed <- areas.removed[-which(areas.removed$size==selection[i])[1],] #remove just once and only the first time found. if two same sized areas are part of the same solution both are removed.
+	}
+	list(areas.selected,areas.removed) # return two vectors as list	
+}
+
+
+#debug(knappsackn) ##debug
+#timeboard[timeboard$Minute==361,] ##debug
+
+#for (i in 361:362) { #debug 
+for (i in 1:length(unique(timeboard$Minute))) { # per Minute - loop since knappsackn function needs one value not a vector like in lapply
+	areas.removed <- areas # initialize the areas. all areas are available for a new minute
+	areas.selected <- vector() # create new vector for the selected elements
+	
+	for (a in 1:length(timeboard$Kategorie[timeboard$Minute==i-1])) { # -1 because minute starts at 0
+	       	returned.list <- knappsackn(timeboard[timeboard$Minute==i-1,"Normzahl"][[a]],areas.removed)
+		selected.elements <- as.vector(returned.list[[1]]) #the returned selected areas
+		lightup[lightup$Minute==i-1,][a,selected.elements] <- 1 # mark the corresponding columns with 1, if area selected
+		areas.removed <- as.vector(returned.list[[2]]) #the remaining areas
+		#print(paste("Minute: ",i-1," - Normzahl der ",a,". Kategorie: ",timeboard[timeboard$Minute==i-1,"Normzahl"][[a]]," ausgewähltes Element: ",selected.elements,sep="")) ##debug
+	}
+}
+
+write.csv(lightup,"lightup.csv")
+
