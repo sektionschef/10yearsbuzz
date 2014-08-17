@@ -18,13 +18,11 @@ areas <- data.frame(size = c(50,30,18,12,32,44,2,6,9,45,32,36,19,23,27,29,15,11,
 areas$id <- paste("e",1:length(areas$size),sep="")
 #write.csv(areas,"areas.csv")
 
-
+#replace 1 with color code
 lightup[lightup$Kategorie == "Consulting",4:ncol(lightup)] <- ifelse(lightup[lightup$Kategorie == "Consulting",4:ncol(lightup)]==1,"#saudu",NA)
 
 #lightup[,4:ncol(lightup)==1] 
 
-lightup[1:9,]
-asdfasf
 
 ######################### LADEN UND FORMATIEREN ############################### 
 # Input Zeiten laden
