@@ -2,7 +2,7 @@
 
 require(XML)
 
-file <- "drawing.svg"
+file <- "canvas.svg"
 areas <- data.frame(id = c("e1","e2","e3"))
 
 xml.data <- xmlInternalTreeParse(file) #parse the svg
@@ -44,7 +44,7 @@ areas$size <- sapply(areas$id, function(i) calculate.sum(polyordinates[[i]]))
 #plot(polyordinates[[2]]) ## polygon is upside down
 
 
-normalize <- function(sizes) {
+normalize <- function(sizes) { #normalize to 100%
 	normalize.factor <- 100/sum(sizes)
 	normalized <- normalize.factor * sizes
 	normalized
@@ -52,3 +52,6 @@ normalize <- function(sizes) {
 
 areas$normalized <- normalize(areas$size)
 #areas
+
+
+write.csv(areas, "areas.csv")

@@ -1,5 +1,6 @@
 input/
 export/
+data/
 
 ## filetypes
 *.csv

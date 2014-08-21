@@ -6,10 +6,10 @@ library(plyr)
 
 
 ####temporary stuff
-#timeboard <- read.csv(file="timeboard.csv",head=TRUE) ##debug shortcut
+timeboard <- read.csv(file="timeboard.csv",head=TRUE) ##debug shortcut
 #timeboard[1:6,]
 
-lightup <- read.csv(file="lightup.csv",head=TRUE) ##debug shortcut
+#lightup <- read.csv(file="lightup.csv",head=TRUE) ##debug shortcut
 #lightup[1:4,]
 
 #target_example <- 32 ##target for knappsack
@@ -18,10 +18,97 @@ areas <- data.frame(size = c(50,30,18,12,32,44,2,6,9,45,32,36,19,23,27,29,15,11,
 areas$id <- paste("e",1:length(areas$size),sep="")
 #write.csv(areas,"areas.csv")
 
-#replace 1 with color code
-lightup[lightup$Kategorie == "Consulting",4:ncol(lightup)] <- ifelse(lightup[lightup$Kategorie == "Consulting",4:ncol(lightup)]==1,"#saudu",NA)
 
-#lightup[,4:ncol(lightup)==1] 
+category.colors <- data.frame(
+		category = c(
+		"Consulting",
+		"JFX",
+		"Red. Betreuung",
+		"PJM",
+		"Red. Leitung & Content Creation",
+		"Konzeption"),
+		color = c(
+		"FF62FC74",
+		"FFFCF262",
+		"FF6289FC",
+		"FFBF62FC",
+		"FFFC8962",
+		"FF62FCE3"))
+
+
+######### create the output format of the solution #########
+lightup <- data.frame("Minute" = unique(timeboard$Minute)) #where the lights will be placed ##NEW
+lightup[,as.character(areas$id)] <- 0 ## fill it up with ids of areas
+#lightup[1:7,]
+
+
+#lightup[lightup$Minute==1,c("e1","e2")] <- as.character(category.colors[timeboard$Kategorie[2] == category.colors$category, "color"])
+
+
+########### Knappsack function - allocating areas to categories #################
+knappsackn <- function(target,areas.removed) { #finding optimal areas for each category for each minute, maximizing for the best match of individual categories and areas (not the smallest difference for each minute) and maximizing the amount of areas used.
+
+	## create all possible combinations
+	number.areas.for.combinations <- 4 ##more for better results
+	possible.combinations <- append(areas.removed$size,rep(0, number.areas.for.combinations)) #add zero so it repeats while the other stuff is just coming up once. necessary to be able to choose less than 4 areas. number of areas means how many areas can be selected, making it more and more complex.
+
+	possible.combinations <- gtools::combinations(length(possible.combinations), number.areas.for.combinations, v=possible.combinations, set=FALSE, repeats.allowed=FALSE) ## all combinations for the areas, second parameter is the dimensions (number of elements to add up), faster to exand.grid
+
+	#possible.combinations <- unique(possible.combinations) # takes a lot of time - remove duplicate rows, duplicates because of the added 0s
+	possible.combinations <- possible.combinations[-which(rowSums(possible.combinations!=0)==0),] ##remove combinations full of zeroes. there must be at least one area chosen.
+	
+	#get the index of the minima
+	diff <- abs(target-rowSums(possible.combinations)) #the absolute difference for each combination and the target
+	solutions <- possible.combinations[which(diff == min(diff)),] ## all solutions for minimal difference between area and time value
+	#X ##debug
+
+	zero.count <- ifelse(nrow(solutions)>1,apply(solutions,1,function(s) sum(s!=0)),1) # the condition equals 0 or 1, so the sum counts the elements not zero. if there is jsut one row, this one is taken
+
+	selection <- solutions[which(zero.count == max(zero.count))[1],] #select the first row that meets the criteria of having the least zeroes, (min of zeroes)  
+	selection <- selection[selection!=0] # remove the zeroes, if there are some. zero means no area.
+
+	for (i in 1:length(selection)) { ## remove the selected element chosen for the current category so the next iteration can't chose the same area again.
+		areas.selected[length(areas.selected)+1] <- areas.removed$id[which(areas.removed$size==selection[i])[1]] # save the id of the used area
+		areas.removed <- areas.removed[-which(areas.removed$size==selection[i])[1],] #remove just once and only the first time found. if two same sized areas are part of the same solution both are removed.
+	}
+	list(areas.selected,areas.removed) # return two vectors as list	
+}
+
+
+#debug(knappsackn) ##debug
+#timeboard[timeboard$Minute==361,] ##debug
+
+#for (i in 361:362) { #debug 
+for (i in 1:length(unique(timeboard$Minute))) { # per Minute - loop since knappsackn function needs one value not a vector like in lapply
+	areas.removed <- areas # initialize the areas. all areas are available for a new minute
+	areas.selected <- vector() # create new vector for the selected elements
+	
+	for (a in 1:length(timeboard$Kategorie[timeboard$Minute==i-1])) { # -1 because minute starts at 0
+	       	returned.list <- knappsackn(timeboard[timeboard$Minute==i-1,"Normzahl"][[a]],areas.removed)
+		selected.elements <- as.vector(returned.list[[1]]) #the returned selected areas
+		#lightup[lightup$Minute==i-1,selected.elements][timeboard$Kategorie[a] == category.colors$category,] <- as.character(category.colors$color[a]) # mark the corresponding columns with 1, if area selected
+		lightup[lightup$Minute==i-1,selected.elements] <- as.character(category.colors[timeboard$Kategorie[a] == category.colors$category, "color"]) ## new line adding the colors per category for each line- NEW
+		areas.removed <- as.vector(returned.list[[2]]) #the remaining areas
+		#print(paste("Minute: ",i-1," - Normzahl der ",a,". Kategorie: ",timeboard[timeboard$Minute==i-1,"Normzahl"][[a]]," ausgewähltes Element: ",selected.elements,sep="")) ##debug
+	}
+}
+
+write.csv(lightup,"letitallbe.csv")
+isfasfafadsfasfafasfaf
+#### experimental
+#lightup[lightup$Kategorie == "Consulting",4:ncol(lightup)] <- ifelse(lightup[lightup$Kategorie == "Consulting",4:ncol(lightup)]==1,"#saudu",NA)
+
+as.character(category.colors[lightup$Kategorie[1] == category.colors$category,"color"])
+lksdkjasfj
+
+
+for (x in 1:nrow(category.colors)) {
+	lightup[lightup$Kategorie == category.colors$category[x],4:ncol(lightup)] <- ifelse(lightup[lightup$Kategorie == category.colors$category[x],4:ncol(lightup)]==1,as.character(category.colors$color[x]),"NA")
+}
+
+write.csv(lightup,"letitallbe.csv")
+isfasfafadsfasfafasfaf
+### experimental
 
 
 ######################### LADEN UND FORMATIEREN ############################### 
