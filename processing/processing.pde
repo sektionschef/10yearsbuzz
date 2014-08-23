@@ -74,20 +74,26 @@ void setup() {
 //
 void draw() {
   
-    background(0); //background black, so there is nothing in the projection
+  background(0); //background black, so there is nothing in the projection
  
-
   TableRow axel_row = scheme.getRow(row_count%scheme.getRowCount()); //initialize a single row manually chosen, use the modulo to restrict the row_count not exceeding the row count
   //println(axel_row); //debug
 
-  clock_sec = axel_row.getInt(1);
-  clock = nf(clock_sec/60,2,0) + ":" + nf(clock_sec%60,2,0); 
-  println("Clock: " + clock);
+  if(millis() - time >= wait){
+    println("tick");
+    row_count+=1; 
+    time = millis();//update the stored time
+  
+
+    clock_sec = axel_row.getInt(1);
+    clock = nf(clock_sec/60,2,0) + ":" + nf(clock_sec%60,2,0); 
+    println("Clock: " + clock);
+  }
   
   // get the values for each row
-  for (int i = 3; i < element_count; i++) { //for each element  
-    hue[i-2] = unhex(axel_row.getString(i)); //get value for each element and write it in an array; getString for unhexing; mode is ARGB! so put "ff in front for full colour (in format "ff"+"2d495e") 
-   //println("hue: " + hue[i]); //debug
+  for (int i = 1; i < element_count; i++) { //for each element  
+    hue[i] = unhex(axel_row.getString(i+2)); //get value for each element and write it in an array; getString for unhexing; mode is ARGB! so put "ff in front for full colour (in format "ff"+"2d495e") 
+    //println("zahl: "+ i + "hue: " + hue[i]); //debug
   }
   
   
@@ -119,11 +125,6 @@ void draw() {
   // render the scene, transformed using the corner pin surface
   surface.render(offscreen);     
 
-  if(millis() - time >= wait){
-    println("tick");
-    row_count+=1; 
-    time = millis();//update the stored time
-  }
  
 }
 
