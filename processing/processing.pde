@@ -4,24 +4,31 @@ import deadpixel.keystone.*; //keystone library
 
 //variables
 String svg_path = "../canvas.svg"; //path to svg of canvas
-int element_count = 3;// number of elements in svg, mind that the loop starts at 0
-int width = 600; //width of canvas - 120*5
-int height = 400; //height of canvas - 80*5
+int element_count = 8;// number of elements in svg, mind that the loop starts at 0
 
-String table_path = "../letitallbe.bak.csv"; //path to table with colors
+
+int width = 1200; //width of canvas - 120*5
+int height = 800; //height of canvas - 80*5
+
+
+String table_path = "../lightup.csv"; //path to table with colors per element (columns) for each state (rows)
 int row_count = 0; //starting line of color csv table
 //int[] element_names = new int[17]; // create array with element ids of svg
 int[] hue = new int[element_count]; //array for colour levels
 int whiteout = 100; //0-255 more brightness for the whole image
 
-String clock = "start";
-int clock_sec =0;
-int time;
-int wait = 1000;
+
+String clock = "00:00"; // variable showing the time as strng
+int clock_sec =0; // number of seconds of the day (from the csv)
+int time; //time from start, for the delay
+int wait = 500; //delay for reach cycle 
+// 2500 milliseconds for doing one day in 60 Minutes
+// 1250 milliseconds for one day in 30 Minutes
+// 1000; one per second
 
 
 //temp
-String[] elementos = {"e1","e2","e3"};
+String[] elementos = {"e1","e2","e3","e4","e5","e6","e7","e8"};
 
 
 //Objects
@@ -61,7 +68,7 @@ void setup() {
   for (int i = 0; i < element_count; i++) { //get all the children at once
      element[i] = canvas.getChild(elementos[i]); // Initialize each object with the ID of the svg; convert it to string so it is accepted
      //element[i].scale(0.5);// scale, which percentage
-     //println(elementos[i]+ "element");
+     println(elementos[i]+ " element");
   }
    
   
@@ -79,35 +86,40 @@ void draw() {
   TableRow axel_row = scheme.getRow(row_count%scheme.getRowCount()); //initialize a single row manually chosen, use the modulo to restrict the row_count not exceeding the row count
   //println(axel_row); //debug
 
-  if(millis() - time >= wait){
-    println("tick");
+
+  if(millis() - time >= wait){ //delay loop
+    //println("tick");
     row_count+=1; 
     time = millis();//update the stored time
   
 
-    clock_sec = axel_row.getInt(1);
+    clock_sec = axel_row.getInt(1); //get the seconds from the csv and format them to clock-style
     clock = nf(clock_sec/60,2,0) + ":" + nf(clock_sec%60,2,0); 
-    println("Clock: " + clock);
+    //println("Clock: " + clock);
   }
   
   // get the values for each row
-  for (int i = 1; i < element_count; i++) { //for each element  
-    hue[i] = unhex(axel_row.getString(i+2)); //get value for each element and write it in an array; getString for unhexing; mode is ARGB! so put "ff in front for full colour (in format "ff"+"2d495e") 
+  for (int i = 0; i < element_count; i++) { //for each element  
+    hue[i] = unhex(axel_row.getString(i+2)); //get value from each column and write it in an array; getString for unhexing; mode is ARGB! so put "ff in front for full colour (in format "ff"+"2d495e") 
     //println("zahl: "+ i + "hue: " + hue[i]); //debug
   }
   
   
   offscreen.beginDraw();
   
+  // create a background rect so transparency works, otherwise the transparency of 0 is not fully transparent
+  offscreen.fill(0);
+  offscreen.noStroke();
+  offscreen.rect(0,0,width,height);
+
+
   for (int i = 0; i < element_count; i++) {           
       element[i].disableStyle();
       offscreen.fill(hue[i]);
       offscreen.noStroke(); 
       offscreen.shape( element[i], 0 ,125); //552, 122 oder 0px deviance, no idea why - probably because of rescaling from 1000 to 500; for offscreen (keystoning) it takes 0 instead of -552px for y)
   }  
- 
 
-  
   // add a white rectengular for softening the colours in total, transparency value = whiteout
   offscreen.fill(255,255,255,whiteout);
   //println(whiteout);
@@ -115,6 +127,11 @@ void draw() {
   offscreen.rect(0,0,width,height);
   
   
+// create the text box
+  offscreen.textSize(24);
+  offscreen.fill(0); 
+  offscreen.text(clock, 50, 50); //it is important to overwrite the text in each void draw loop
+
   // Convert the mouse coordinate into surface coordinates
   // this will allow you to use mouse events inside the 
   // surface from your screen. 
@@ -156,10 +173,17 @@ void keyPressed() { //function for keystone
     break;
 
   case 'w':
-    whiteout+=10;
-    break;
+    if (whiteout < 255) {
+      whiteout+=15;
+      println("whiteout: " + whiteout);
+    }
+      break;
+  
   case 'b':
-    whiteout-=10;
+    if (whiteout > 0) {
+      whiteout-=15;
+      println("whiteout: " + whiteout);
+    }  
     break;
   }   
 }

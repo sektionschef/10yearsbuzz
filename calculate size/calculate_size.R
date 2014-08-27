@@ -2,8 +2,11 @@
 
 require(XML)
 
-file <- "canvas.svg"
-areas <- data.frame(id = c("e1","e2","e3"))
+file <- "../canvas.svg"
+#areas <- data.frame(id = c("e1","e2","e3"))
+
+number.of.elements <- 8
+areas <- data.frame(ids = paste("e",1:number.of.elements,sep=""))
 
 xml.data <- xmlInternalTreeParse(file) #parse the svg
 
@@ -37,6 +40,7 @@ calculate.sum <- function(polyordinates) {
 
 
 polyordinates <- sapply(areas$id, function(i) get.polyordinates(xml.data,i))
+polyordinates ##debug
 areas$size <- sapply(areas$id, function(i) calculate.sum(polyordinates[[i]]))
 #areas$size
 
@@ -51,7 +55,7 @@ normalize <- function(sizes) { #normalize to 100%
 }
 
 areas$normalized <- normalize(areas$size)
-#areas
+areas
 
 
 write.csv(areas, "areas.csv")
