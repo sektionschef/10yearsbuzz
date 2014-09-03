@@ -6,17 +6,18 @@ library(plyr)
 
 
 ####temporary stuff
-#timeboard <- read.csv(file="timeboard.csv",head=TRUE) ##debug shortcut
+timeboard <- read.csv(file="timeboard.csv",head=TRUE) ##debug shortcut
 #timeboard[1:6,]
 #lightup <- read.csv(file="lightup.csv",head=TRUE) ##debug shortcut
 #lightup[1:4,]
 
+#example stuff
 #target_example <- 32 ##target for knappsack
+#areas <- data.frame(size = c(50,30,18,12,32,44,2,6,9,45,32,36,19,23,27,29,15,11,17,39,28,23,11,19,1,3,8,33,23,1,5,9,24,14,11,9,44,21))
+#areas$id <- paste("e",1:length(areas$size),sep="")
 
-areas <- data.frame(size = c(50,30,18,12,32,44,2,6,9,45,32,36,19,23,27,29,15,11,17,39,28,23,11,19,1,3,8,33,23,1,5,9,24,14,11,9,44,21))
-areas$id <- paste("e",1:length(areas$size),sep="")
-#write.csv(areas,"calculate size/areas.csv")
 
+number.areas.for.combinations <- 7 ##more for better results - 30^7
 
 category.colors <- data.frame(
 		category = c(
@@ -35,15 +36,56 @@ category.colors <- data.frame(
 		"FF62FCE3"))
 
 
-######################### LADEN UND FORMATIEREN ############################### 
+######################### load ############################### 
 # Input Zeiten laden
 leistungen <- read.csv(file="input/volle_leistung.csv",head=TRUE,sep=";")
 names(leistungen) <- sub(" ", ".", names(leistungen)) ## replace spaces in column names
+
+#load sizes of canvas elements
+areas <- read.csv(file="calculate size/areas.csv",head=TRUE)
+#areas$normalized
 
 # Zuteilung der Tätigkeiten
 kategorien <- read.csv(file="input/kategorisierung.csv", head=TRUE,sep=",")
 #table(kategorien[,"Kategorie"]) ##debug, Kategorie is factor
 
+
+### beautiful look at the data
+#plot(areas$normalized)
+#plot(timeboard$Normzahl)  ## 5-35
+
+#####
+################## create areas for the knapsack to be less hungry ############
+#####
+#create a random categories for all elements
+#buzzo <- data.frame("ids"=paste("e",sample(1:133, 133, replace=F),sep="")) # create areas
+#buzzo$class <- paste("a",sample(1:30, 133, replace=T),sep="")
+
+#buzzo ##debug
+#plot(table(buzzo$class)) ##debug
+#write.csv(buzzo, "buzzo.csv", row.names=F) #save in csv
+
+
+buzzo <- read.csv(file="buzzo.csv")
+areas <- merge(areas,buzzo,by.x="ids",by.y="ids")
+
+areas.konsl <- dcast(areas, class~"normalized", sum, value.var="normalized")
+#areas.konsl ##debug
+#plot(areas.konsl) ## size of the categories
+
+
+possy <- append(areas.konsl$normalized,rep(0, number.areas.for.combinations)) #add zero so it repeats while the other stuff is just coming up once. necessary to be able to choose less than 4 areas. number of areas means how many areas can be selected, making it more and more complex.
+#	year$Start.time_now <= Sys.time() & Sys.time() <= year$End.time_now, ## for real
+possy
+possy <- gtools::combinations(30, number.areas.for.combinations, v=possy, set=FALSE, repeats.allowed=FALSE) ## all combinations for the areas, second parameter is the dimensions (number of elements to add up), faster to exand.grid
+
+possy
+asdfasfasf
+
+
+
+if (FALSE) { ##devotage
+###################### format ##########################
 ## Datum konvertieren VON BMD - "12.09.2013"
 leistungen$Leistungsdatum <- as.Date(leistungen$Leistungsdatum, "%d.%m.%Y")
 
@@ -127,6 +169,7 @@ write.csv(timeboard,"timeboard.csv")
 #	dev.off()
 #}
 
+}
 
 
 ######### create the output format of the solution #########
@@ -139,8 +182,7 @@ lightup[,as.character(areas$id)] <- 0 ## fill it up with ids of areas
 knappsackn <- function(target,areas.removed) { #finding optimal areas for each category for each minute, maximizing for the best match of individual categories and areas (not the smallest difference for each minute) and maximizing the amount of areas used.
 
 	## create all possible combinations
-	number.areas.for.combinations <- 4 ##more for better results
-	possible.combinations <- append(areas.removed$size,rep(0, number.areas.for.combinations)) #add zero so it repeats while the other stuff is just coming up once. necessary to be able to choose less than 4 areas. number of areas means how many areas can be selected, making it more and more complex.
+	possible.combinations <- append(areas.removed$normalized,rep(0, number.areas.for.combinations)) #add zero so it repeats while the other stuff is just coming up once. necessary to be able to choose less than 4 areas. number of areas means how many areas can be selected, making it more and more complex.
 
 	possible.combinations <- gtools::combinations(length(possible.combinations), number.areas.for.combinations, v=possible.combinations, set=FALSE, repeats.allowed=FALSE) ## all combinations for the areas, second parameter is the dimensions (number of elements to add up), faster to exand.grid
 
@@ -150,7 +192,6 @@ knappsackn <- function(target,areas.removed) { #finding optimal areas for each c
 	#get the index of the minima
 	diff <- abs(target-rowSums(possible.combinations)) #the absolute difference for each combination and the target
 	solutions <- possible.combinations[which(diff == min(diff)),] ## all solutions for minimal difference between area and time value
-	#X ##debug
 
 	zero.count <- ifelse(nrow(solutions)>1,apply(solutions,1,function(s) sum(s!=0)),1) # the condition equals 0 or 1, so the sum counts the elements not zero. if there is jsut one row, this one is taken
 
@@ -158,8 +199,8 @@ knappsackn <- function(target,areas.removed) { #finding optimal areas for each c
 	selection <- selection[selection!=0] # remove the zeroes, if there are some. zero means no area.
 
 	for (i in 1:length(selection)) { ## remove the selected element chosen for the current category so the next iteration can't chose the same area again.
-		areas.selected[length(areas.selected)+1] <- areas.removed$id[which(areas.removed$size==selection[i])[1]] # save the id of the used area
-		areas.removed <- areas.removed[-which(areas.removed$size==selection[i])[1],] #remove just once and only the first time found. if two same sized areas are part of the same solution both are removed.
+		areas.selected[length(areas.selected)+1] <- areas.removed$id[which(areas.removed$normalized==selection[i])[1]] # save the id of the used area
+		areas.removed <- areas.removed[-which(areas.removed$normalized==selection[i])[1],] #remove just once and only the first time found. if two same sized areas are part of the same solution both are removed.
 	}
 	list(areas.selected,areas.removed) # return two vectors as list	
 }
@@ -167,8 +208,8 @@ knappsackn <- function(target,areas.removed) { #finding optimal areas for each c
 #debug(knappsackn) ##debug
 #timeboard[timeboard$Minute==361,] ##debug
 
-#for (i in 361:362) { #debug 
-for (i in 1:length(unique(timeboard$Minute))) { # per Minute - loop since knappsackn function needs one value not a vector like in lapply
+for (i in 361:362) { #debug 
+#for (i in 1:length(unique(timeboard$Minute))) { # per Minute - loop since knappsackn function needs one value not a vector like in lapply
 	areas.removed <- areas # initialize the areas. all areas are available for a new minute
 	areas.selected <- vector() # create new vector for the selected elements
 	
@@ -178,7 +219,7 @@ for (i in 1:length(unique(timeboard$Minute))) { # per Minute - loop since knapps
 		#lightup[lightup$Minute==i-1,selected.elements][timeboard$Kategorie[a] == category.colors$category,] <- as.character(category.colors$color[a]) # mark the corresponding columns with 1, if area selected
 		lightup[lightup$Minute==i-1,selected.elements] <- as.character(category.colors[timeboard$Kategorie[a] == category.colors$category, "color"]) ## new line adding the colors per category for each line- NEW
 		areas.removed <- as.vector(returned.list[[2]]) #the remaining areas
-		#print(paste("Minute: ",i-1," - Normzahl der ",a,". Kategorie: ",timeboard[timeboard$Minute==i-1,"Normzahl"][[a]]," ausgewähltes Element: ",selected.elements,sep="")) ##debug
+		print(paste("Minute: ",i-1," - Normzahl der ",a,". Kategorie: ",timeboard[timeboard$Minute==i-1,"Normzahl"][[a]]," ausgewähltes Element: ",selected.elements,sep="")) ##debug
 	}
 }
 

@@ -4,13 +4,13 @@ import deadpixel.keystone.*; //keystone library
 
 //variables
 String svg_path = "canvas.svg"; //path to svg of canvas
-int element_count = 30;// number of elements in svg, mind that the loop starts at 0 - 133 elements in total
+int element_count = 8;// number of elements in svg, mind that the loop starts at 0
 
 //temp
 String[] elementos = new String[element_count];
 
-int width = 800; //width of canvas - 120*5
-int height = 600; //height of canvas - 80*5
+int width = 1200; //width of canvas - 120*5
+int height = 800; //height of canvas - 80*5
 
 
 String table_path = "lightup.csv"; //path to table with colors per element (columns) for each state (rows)
@@ -63,10 +63,10 @@ void setup() {
   time = millis();//store the current time
 
 
-for (int x = 0; x < element_count; x++) {
-  //String[] elementos = {"e1","e2","e3","e4","e5","e6","e7","e8"};
-  elementos[x] = "e"+(x+1);
-  println(elementos[x]);
+//String[] elementos = {"e1","e2","e3","e4","e5","e6","e7","e8"};
+for (int i = 0; i < element_count; i++) {
+  elementos[i] = "e"+(i+1);
+  println(elementos[i]);
 }
 
   //get svg elements
@@ -74,20 +74,22 @@ for (int x = 0; x < element_count; x++) {
   //rect_a = canvas.getChild("e1"); //archive for getting child
   for (int i = 0; i < element_count; i++) { //get all the children at once
      element[i] = canvas.getChild(elementos[i]); // Initialize each object with the ID of the svg; convert it to string so it is accepted
-     element[i].scale(0.5);// scale, which percentage
+     //element[i].scale(0.5);// scale, which percentage
      println(elementos[i]+ " element");
   }
-   
+
   
   scheme = loadTable( table_path, "header");
   println(scheme.getRowCount() + " total rows in table"); //debug, Anzahl Rows
+  
 }
 
 //
 ///////////////////////////////// DRAW ////////////////////////////////
 //
+
 void draw() {
-  
+  /*
   background(0); //background black, so there is nothing in the projection
  
   TableRow axel_row = scheme.getRow(row_count%scheme.getRowCount()); //initialize a single row manually chosen, use the modulo to restrict the row_count not exceeding the row count
@@ -120,13 +122,12 @@ void draw() {
   offscreen.rect(0,0,width,height);
 
 
-  for (int i = 0; i < element_count; i++) {               
+  for (int i = 0; i < element_count; i++) {           
       element[i].disableStyle();
       offscreen.fill(hue[i]);
       offscreen.noStroke(); 
       offscreen.shape( element[i], 0 ,125); //552, 122 oder 0px deviance, no idea why - probably because of rescaling from 1000 to 500; for offscreen (keystoning) it takes 0 instead of -552px for y)
   }  
-  
 
   // add a white rectengular for softening the colours in total, transparency value = whiteout
   offscreen.fill(255,255,255,whiteout);
@@ -149,8 +150,7 @@ void draw() {
  
   // render the scene, transformed using the corner pin surface
   surface.render(offscreen);     
-
- 
+*/
 }
 
 

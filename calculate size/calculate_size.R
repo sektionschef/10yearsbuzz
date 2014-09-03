@@ -3,9 +3,9 @@
 require(XML)
 
 file <- "../canvas.svg"
-#areas <- data.frame(id = c("e1","e2","e3"))
+#areas <- data.frame(ids = c("e1","e2","e3"))
 
-number.of.elements <- 8
+number.of.elements <- 133
 areas <- data.frame(ids = paste("e",1:number.of.elements,sep=""))
 
 xml.data <- xmlInternalTreeParse(file) #parse the svg
@@ -15,12 +15,19 @@ get.polyordinates <- function(xml,id) {
 	#xpathSApply(xml.data, "//*[@id='path2985']",xmlValue) ## get a value
 	polyordinates <- xpathSApply(xml, paste("//*[@id='",eval(id),"']",sep=""),xmlGetAttr, "d") # get the path's coordinates
 	polyordinates <- strsplit(polyordinates, " ") ## split for the coordinates
-	polyordinates <- polyordinates[[1]][2:length(polyordinates[[1]])] ## remove the "m"
+	polyordinates <- polyordinates[[1]][2:(length(polyordinates[[1]])-1)] ## remove the "m" at the beginning and the "z" at the end
 	polyordinates <- strsplit(as.character(polyordinates), ",") ## remove the comma between x and y
 	polyordinates <- matrix(as.numeric(unlist(polyordinates)), ncol=2, nrow=length(polyordinates),byrow=TRUE) # save as matrix
+	#polyordinates <- rbind(polyordinates, polyordinates[1,]) ## add the first line as a new row at the end... this was thought to be necessary when "z" - close path is used in the svg - but makes no difference
 	polyordinates
 }
 #polyordinates <- get.polyordinates(xml.data,ids[1])
+
+polyordinates <- sapply(areas$id, function(i) get.polyordinates(xml.data,i))
+#polyordinates ##debug
+
+#polyordinates[[2]] ##debug - 1161.861270523501 für e2
+#plot(polyordinates[[2]], type="b") ## polygon is upside down - #debug
 
 
 ## calculate the area of polygon
@@ -39,13 +46,10 @@ calculate.sum <- function(polyordinates) {
 }
 
 
-polyordinates <- sapply(areas$id, function(i) get.polyordinates(xml.data,i))
-polyordinates ##debug
-areas$size <- sapply(areas$id, function(i) calculate.sum(polyordinates[[i]]))
-#areas$size
 
-#polyordinates[[2]]
-#plot(polyordinates[[2]]) ## polygon is upside down
+#calculate.sum(polyordinates[[2]]) ##debug
+areas$size <- sapply(polyordinates, function(i) calculate.sum(i))
+#areas$size
 
 
 normalize <- function(sizes) { #normalize to 100%
@@ -55,7 +59,6 @@ normalize <- function(sizes) { #normalize to 100%
 }
 
 areas$normalized <- normalize(areas$size)
-areas
+areas ##debug
 
-
-write.csv(areas, "areas.csv")
+write.csv(areas, "areas.csv", row.names=FALSE)
