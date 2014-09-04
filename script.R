@@ -17,7 +17,7 @@ timeboard <- read.csv(file="timeboard.csv",head=TRUE) ##debug shortcut
 #areas$id <- paste("e",1:length(areas$size),sep="")
 
 
-number.areas.for.combinations <- 7 ##more for better results - 30^7
+number.areas.for.combinations <- 5 ##more for better results - 30^7
 
 category.colors <- data.frame(
 		category = c(
@@ -70,18 +70,9 @@ buzzo <- read.csv(file="buzzo.csv")
 areas <- merge(areas,buzzo,by.x="ids",by.y="ids")
 
 areas.konsl <- dcast(areas, class~"normalized", sum, value.var="normalized")
+areas.konsl$class <- as.character(areas.konsl$class)
 #areas.konsl ##debug
 #plot(areas.konsl) ## size of the categories
-
-
-possy <- append(areas.konsl$normalized,rep(0, number.areas.for.combinations)) #add zero so it repeats while the other stuff is just coming up once. necessary to be able to choose less than 4 areas. number of areas means how many areas can be selected, making it more and more complex.
-#	year$Start.time_now <= Sys.time() & Sys.time() <= year$End.time_now, ## for real
-possy
-possy <- gtools::combinations(30, number.areas.for.combinations, v=possy, set=FALSE, repeats.allowed=FALSE) ## all combinations for the areas, second parameter is the dimensions (number of elements to add up), faster to exand.grid
-
-possy
-asdfasfasf
-
 
 
 if (FALSE) { ##devotage
@@ -193,13 +184,20 @@ knappsackn <- function(target,areas.removed) { #finding optimal areas for each c
 	diff <- abs(target-rowSums(possible.combinations)) #the absolute difference for each combination and the target
 	solutions <- possible.combinations[which(diff == min(diff)),] ## all solutions for minimal difference between area and time value
 
-	zero.count <- ifelse(nrow(solutions)>1,apply(solutions,1,function(s) sum(s!=0)),1) # the condition equals 0 or 1, so the sum counts the elements not zero. if there is jsut one row, this one is taken
+	# if there are more than one optimal solutions
+	#zero.count <- ifelse(nrow(solutions)>1,apply(solutions,1,function(s) sum(s!=0)),1) # the condition equals 0 or 1, so the sum counts the elements not zero. if there is jsut one row, this one is taken
+	#selection <- ifelse(max(zero.count) > 0, solutions[which(zero.count == max(zero.count))[1],], solutions) #select the first row that meets the criteria of having the least zeroes, (min of zeroes)  - if there are no zeroes, take the first solution
 
-	selection <- solutions[which(zero.count == max(zero.count))[1],] #select the first row that meets the criteria of having the least zeroes, (min of zeroes)  
+	if (is.null(nrow(solutions))) { ## if there is more than one row the first one is chosen - note: ifelse() just gives me the first value
+		selection <- solutions
+	} else {
+		selection <- solutions[1,]
+	}
+
 	selection <- selection[selection!=0] # remove the zeroes, if there are some. zero means no area.
 
 	for (i in 1:length(selection)) { ## remove the selected element chosen for the current category so the next iteration can't chose the same area again.
-		areas.selected[length(areas.selected)+1] <- areas.removed$id[which(areas.removed$normalized==selection[i])[1]] # save the id of the used area
+		areas.selected[length(areas.selected)+1] <- areas.removed[areas.removed$normalized==selection[i],"class"][1] # save the class of the used area
 		areas.removed <- areas.removed[-which(areas.removed$normalized==selection[i])[1],] #remove just once and only the first time found. if two same sized areas are part of the same solution both are removed.
 	}
 	list(areas.selected,areas.removed) # return two vectors as list	
@@ -208,14 +206,16 @@ knappsackn <- function(target,areas.removed) { #finding optimal areas for each c
 #debug(knappsackn) ##debug
 #timeboard[timeboard$Minute==361,] ##debug
 
-for (i in 361:362) { #debug 
+for (i in 1:150) { #debug 
 #for (i in 1:length(unique(timeboard$Minute))) { # per Minute - loop since knappsackn function needs one value not a vector like in lapply
-	areas.removed <- areas # initialize the areas. all areas are available for a new minute
+	areas.removed <- areas.konsl # initialize the areas. all areas are available for a new minute
 	areas.selected <- vector() # create new vector for the selected elements
 	
 	for (a in 1:length(timeboard$Kategorie[timeboard$Minute==i-1])) { # -1 because minute starts at 0
 	       	returned.list <- knappsackn(timeboard[timeboard$Minute==i-1,"Normzahl"][[a]],areas.removed)
 		selected.elements <- as.vector(returned.list[[1]]) #the returned selected areas
+		#print(selected.elements)
+		selected.elements <- as.vector(areas[selected.elements==areas$class,"ids"]) #convert areas to elements
 		#lightup[lightup$Minute==i-1,selected.elements][timeboard$Kategorie[a] == category.colors$category,] <- as.character(category.colors$color[a]) # mark the corresponding columns with 1, if area selected
 		lightup[lightup$Minute==i-1,selected.elements] <- as.character(category.colors[timeboard$Kategorie[a] == category.colors$category, "color"]) ## new line adding the colors per category for each line- NEW
 		areas.removed <- as.vector(returned.list[[2]]) #the remaining areas

@@ -4,7 +4,7 @@ import deadpixel.keystone.*; //keystone library
 
 //variables
 String svg_path = "canvas.svg"; //path to svg of canvas
-int element_count = 30;// number of elements in svg, mind that the loop starts at 0 - 133 elements in total
+int element_count = 133;// number of elements in svg, mind that the loop starts at 0 - 133 elements in total
 
 //temp
 String[] elementos = new String[element_count];
@@ -74,7 +74,7 @@ for (int x = 0; x < element_count; x++) {
   //rect_a = canvas.getChild("e1"); //archive for getting child
   for (int i = 0; i < element_count; i++) { //get all the children at once
      element[i] = canvas.getChild(elementos[i]); // Initialize each object with the ID of the svg; convert it to string so it is accepted
-     element[i].scale(0.5);// scale, which percentage
+     //element[i].scale(0.5);// scale, which percentage
      println(elementos[i]+ " element");
   }
    
