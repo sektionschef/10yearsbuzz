@@ -17,7 +17,8 @@ timeboard <- read.csv(file="timeboard.csv",head=TRUE) ##debug shortcut
 #areas$id <- paste("e",1:length(areas$size),sep="")
 
 
-number.areas.for.combinations <- 5 ##more for better results - 30^7
+number.areas.for.combinations <- 7 ##combinations of classes used for one category max:7
+number.of.classes <- 30 ##max: 30
 
 category.colors <- data.frame(
 		category = c(
@@ -43,6 +44,7 @@ names(leistungen) <- sub(" ", ".", names(leistungen)) ## replace spaces in colum
 
 #load sizes of canvas elements
 areas <- read.csv(file="calculate size/areas.csv",head=TRUE)
+number.of.areas <- nrow(areas)
 #areas$normalized
 
 # Zuteilung der Tätigkeiten
@@ -54,25 +56,31 @@ kategorien <- read.csv(file="input/kategorisierung.csv", head=TRUE,sep=",")
 #plot(areas$normalized)
 #plot(timeboard$Normzahl)  ## 5-35
 
+
 #####
 ################## create areas for the knapsack to be less hungry ############
 #####
-#create a random categories for all elements
-#buzzo <- data.frame("ids"=paste("e",sample(1:133, 133, replace=F),sep="")) # create areas
-#buzzo$class <- paste("a",sample(1:30, 133, replace=T),sep="")
+classify <- function() { #create a random categories for all elements
+	buzzo <- data.frame("ids"=paste("e",sample(1:number.of.areas, number.of.areas, replace=F),sep="")) # create areas with a random order
+	buzzo$class <- paste("a",sample(1:number.of.classes, number.of.areas, replace=T),sep="") # replace so a number may be taken twice or more often
+	#buzzo ##debug
+	#plot(table(buzzo$class)) ##debug
+	#write.csv(buzzo, "buzzo.csv", row.names=F) #save in csv
+	
+	areas <- merge(areas,buzzo,by.x="ids",by.y="ids") # merge with areas
+	areas$ids <- as.character(areas$ids) # again a factor
+	areas
+}
+areas <- classify()
+#areas ##debug
 
-#buzzo ##debug
-#plot(table(buzzo$class)) ##debug
-#write.csv(buzzo, "buzzo.csv", row.names=F) #save in csv
+areas.consolidate <- function() { #calculate the sizes of the classes
+	areas.konsl <- dcast(areas, class~"normalized", sum, value.var="normalized") # consolidated view
+	areas.konsl$class <- as.character(areas.konsl$class) # is a factor which makes selecting it diffficult
+	areas.konsl ##debug
+	#plot(areas.konsl) ## size of the categories
+}
 
-
-buzzo <- read.csv(file="buzzo.csv")
-areas <- merge(areas,buzzo,by.x="ids",by.y="ids")
-
-areas.konsl <- dcast(areas, class~"normalized", sum, value.var="normalized")
-areas.konsl$class <- as.character(areas.konsl$class)
-#areas.konsl ##debug
-#plot(areas.konsl) ## size of the categories
 
 
 if (FALSE) { ##devotage
@@ -167,6 +175,7 @@ write.csv(timeboard,"timeboard.csv")
 lightup <- data.frame("Minute" = unique(timeboard$Minute)) #where the lights will be placed
 lightup[,as.character(areas$id)] <- 0 ## fill it up with ids of areas
 #lightup[1:7,]
+selected.diff <- vector()
 
 
 ########### Knappsack function - allocating areas to categories #################
@@ -206,24 +215,33 @@ knappsackn <- function(target,areas.removed) { #finding optimal areas for each c
 #debug(knappsackn) ##debug
 #timeboard[timeboard$Minute==361,] ##debug
 
-for (i in 1:150) { #debug 
+
+for (i in 800:850) { #debug 
 #for (i in 1:length(unique(timeboard$Minute))) { # per Minute - loop since knappsackn function needs one value not a vector like in lapply
-	areas.removed <- areas.konsl # initialize the areas. all areas are available for a new minute
+	areas.removed <- areas.consolidate() # initialize the areas. all areas are available for a new minute
 	areas.selected <- vector() # create new vector for the selected elements
 	
 	for (a in 1:length(timeboard$Kategorie[timeboard$Minute==i-1])) { # -1 because minute starts at 0
-	       	returned.list <- knappsackn(timeboard[timeboard$Minute==i-1,"Normzahl"][[a]],areas.removed)
-		selected.elements <- as.vector(returned.list[[1]]) #the returned selected areas
-		#print(selected.elements)
-		selected.elements <- as.vector(areas[selected.elements==areas$class,"ids"]) #convert areas to elements
-		#lightup[lightup$Minute==i-1,selected.elements][timeboard$Kategorie[a] == category.colors$category,] <- as.character(category.colors$color[a]) # mark the corresponding columns with 1, if area selected
+	       	target <- timeboard[timeboard$Minute==i-1,"Normzahl"][[a]]
+		#print(target) ##debug
+		returned.list <- knappsackn(target,areas.removed)
+		selected.areas <- as.vector(returned.list[[1]]) #the returned selected areas
+		#print(selected.areas) ##debug
+		selected.elements <- as.vector(areas[areas$class %in% selected.areas,"ids"]) #convert areas to elements
+		#print(selected.elements) ##debug
+		selected.diff <- append(selected.diff,target - sum(as.vector(areas[areas$ids %in% selected.elements, "normalized"])))
+		#print(selected.diff) ##debug - additive
 		lightup[lightup$Minute==i-1,selected.elements] <- as.character(category.colors[timeboard$Kategorie[a] == category.colors$category, "color"]) ## new line adding the colors per category for each line- NEW
 		areas.removed <- as.vector(returned.list[[2]]) #the remaining areas
-		print(paste("Minute: ",i-1," - Normzahl der ",a,". Kategorie: ",timeboard[timeboard$Minute==i-1,"Normzahl"][[a]]," ausgewähltes Element: ",selected.elements,sep="")) ##debug
+		print(paste("Minute: ",i-1," category: ",a,". Summe: ",timeboard[timeboard$Minute==i-1,"Normzahl"][[a]]," selected elements: ",length(selected.elements) , sep="")) ##debug
 	}
 }
 
 
 write.csv(lightup,"lightup.csv")
 
+sink(file=paste("selected.diff_comb", number.areas.for.combinations,"_class", number.of.classes,".txt", sep="") )
+summary(selected.diff)
+sink()
 
+write.csv(selected.diff,paste("selected.diff_comb", number.areas.for.combinations,"_class", number.of.classes,".csv", sep="") )
