@@ -17,7 +17,7 @@ timeboard <- read.csv(file="timeboard.csv",head=TRUE) ##debug shortcut
 #areas$id <- paste("e",1:length(areas$size),sep="")
 
 
-number.areas.for.combinations <- 7 ##combinations of classes used for one category max:7
+number.areas.for.combinations <- 6 ##combinations of classes used for one category max:7
 number.of.classes <- 30 ##max: 30
 
 category.colors <- data.frame(
@@ -29,12 +29,13 @@ category.colors <- data.frame(
 		"Red. Leitung & Content Creation",
 		"Konzeption"),
 		color = c(
-		"FF62FC74",
-		"FFFCF262",
-		"FF6289FC",
-		"FFBF62FC",
-		"FFFC8962",
-		"FF62FCE3"))
+		"FF813C63", #"FF62FC74" - #oberschiene
+		"FFFFFFFF", #FFFCF262  #white
+		"FFDAEEFA", #FF6289FC # blue
+		"FF3C2313", #FFBF62FC # brown
+		"FFDD0059", #FFFC8962 # magenta 
+		"FFFFAE00")) #FF62FCE3 # yellow dark
+
 
 
 ######################### load ############################### 
@@ -215,14 +216,15 @@ knappsackn <- function(target,areas.removed) { #finding optimal areas for each c
 #debug(knappsackn) ##debug
 #timeboard[timeboard$Minute==361,] ##debug
 
-
-for (i in 800:850) { #debug 
-#for (i in 1:length(unique(timeboard$Minute))) { # per Minute - loop since knappsackn function needs one value not a vector like in lapply
+counter <- 0 ## counting the rows of timeboard for adressing the categories correctly - works only for loop starting at 1
+#for (i in 600:1000) { #debug 
+for (i in 1:length(unique(timeboard$Minute))) { # per Minute - loop since knappsackn function needs one value not a vector like in lapply
 	areas.removed <- areas.consolidate() # initialize the areas. all areas are available for a new minute
 	areas.selected <- vector() # create new vector for the selected elements
 	
 	for (a in 1:length(timeboard$Kategorie[timeboard$Minute==i-1])) { # -1 because minute starts at 0
-	       	target <- timeboard[timeboard$Minute==i-1,"Normzahl"][[a]]
+		counter <- counter + 1 #counting the rows of timeboard
+		target <- timeboard[timeboard$Minute==i-1,"Normzahl"][[a]]
 		#print(target) ##debug
 		returned.list <- knappsackn(target,areas.removed)
 		selected.areas <- as.vector(returned.list[[1]]) #the returned selected areas
@@ -231,9 +233,11 @@ for (i in 800:850) { #debug
 		#print(selected.elements) ##debug
 		selected.diff <- append(selected.diff,target - sum(as.vector(areas[areas$ids %in% selected.elements, "normalized"])))
 		#print(selected.diff) ##debug - additive
-		lightup[lightup$Minute==i-1,selected.elements] <- as.character(category.colors[timeboard$Kategorie[a] == category.colors$category, "color"]) ## new line adding the colors per category for each line- NEW
+		lightup[lightup$Minute==i-1,selected.elements] <- as.character(category.colors[timeboard$Kategorie[counter] == category.colors$category, "color"]) ## new line adding the colors per category for each line- NEW
 		areas.removed <- as.vector(returned.list[[2]]) #the remaining areas
-		print(paste("Minute: ",i-1," category: ",a,". Summe: ",timeboard[timeboard$Minute==i-1,"Normzahl"][[a]]," selected elements: ",length(selected.elements) , sep="")) ##debug
+		
+		#print(counter)
+		print(paste("Minute: ",i-1," category: ",timeboard$Kategorie[counter],". Summe: ",timeboard[timeboard$Minute==i-1,"Normzahl"][[a]]," selected elements: ",length(selected.elements) , sep="")) ##debug
 	}
 }
 

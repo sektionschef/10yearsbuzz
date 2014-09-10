@@ -54,8 +54,9 @@
     <path
        style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        d="M 69.700526,25.54212 713.67277,34.633493 727.81491,450.31127 62.124382,450.81634 z"
-       id="path2985"
-       inkscape:connector-curvature="0" />
+       id="ramen"
+       inkscape:connector-curvature="0"
+       inkscape:label="#path2985" />
     <path
        style="fill:#ff0000;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        d="M 217.1828,57.361925 207.08127,67.968527 209.60665,87.161425 223.24371,79.585281 242.94169,80.595433 254.05337,81.605586 279.30718,81.605586 277.79195,72.009137 278.29703,65.443145 238.396,63.927916 229.30463,63.927916 z"
