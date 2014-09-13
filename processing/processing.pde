@@ -9,8 +9,8 @@ int element_count = 133;// number of elements in svg, mind that the loop starts 
 //temp
 String[] elementos = new String[element_count];
 
-int width = 800; //width of canvas - 120*5
-int height = 600; //height of canvas - 80*5
+int width = 800; //width of canvas - 120
+int height = 500; //height of canvas - 80
 
 
 String table_path = "lightup.csv"; //path to table with colors per element (columns) for each state (rows)
@@ -35,9 +35,13 @@ int wait = 5000; //delay for reach cycle
 //Objects
 Keystone ks; //keystone
 CornerPinSurface surface; //keystone
+PGraphics offscreen;
+
+CornerPinSurface surface2;
+PGraphics offscreen2;
+
 Table scheme; //table, load csv
 
-PGraphics offscreen;
 
 //shapes
 PShape canvas;
@@ -54,6 +58,9 @@ void setup() {
   size(displayWidth, displayHeight,P3D); //P3D important for keystone, since it relies on texture mapping to deform; fill screen
   ks = new Keystone(this);
   surface = ks.createCornerPinSurface(width, height, 20); //height, width, distance grid
+
+  surface2 = ks.createCornerPinSurface(600, 100, 20);
+  surface2.moveTo(200, 0);
  
   // We need an offscreen buffer to draw the surface we
     // want projected
@@ -61,6 +68,7 @@ void setup() {
     // CornerPinSurface.
     // (The offscreen buffer can be P2D or P3D)
   offscreen = createGraphics(displayWidth, displayHeight, P3D);
+  offscreen2 = createGraphics(600, 100, P2D); //matching the Corner Pin Surface
 
   time = millis();//store the current time
 
@@ -105,7 +113,7 @@ void draw() {
   
 
     clock_sec = axel_row.getInt(1); //get the seconds from the csv and format them to clock-style
-    clock = "Clock: " + nf(clock_sec/60,2,0) + ":" + nf(clock_sec%60,2,0); 
+    clock = nf(clock_sec/60,2,0) + ":" + nf(clock_sec%60,2,0); 
     //println("Clock: " + clock);
   }
   
@@ -123,10 +131,6 @@ void draw() {
   offscreen.noStroke();
   offscreen.rect(0,0,width,height);
 
-  //add the frame - border of the canvas
-  ramen.disableStyle(); 
-  offscreen.fill(255,100,34);
-  offscreen.shape(ramen, 0, 0);
 
   for (int i = 0; i < element_count; i++) {               
       element[i].disableStyle();
@@ -137,16 +141,16 @@ void draw() {
 
 
   // add a white rectengular for softening the colours in total, transparency value = whiteout
-  offscreen.fill(255,255,255,whiteout);
+  //offscreen.fill(255,255,255,whiteout);
   //println(whiteout);
+  //offscreen.noStroke();
+  //offscreen.rect(0,0,width,height);
+  
+  //add the frame - border of the canvas
+  ramen.disableStyle(); 
+  offscreen.fill(255,255,255,whiteout);
   offscreen.noStroke();
-  offscreen.rect(0,0,width,height);
-  
-  
-// create the text box
-  offscreen.textSize(18);
-  offscreen.fill(0); 
-  offscreen.text(clock, 75, 75); //it is important to overwrite the text in each void draw loop
+  offscreen.shape(ramen, 0, 0);
 
   // Convert the mouse coordinate into surface coordinates
   // this will allow you to use mouse events inside the 
@@ -154,8 +158,23 @@ void draw() {
   PVector surfaceMouse = surface.getTransformedMouse();
   
   offscreen.endDraw();
- 
+
+  offscreen2.beginDraw();
+  // create the text box with the clock
+    offscreen2.fill(0);
+    offscreen2.rect(0,0,600,100);
+    offscreen2.textSize(16);
+    offscreen2.fill(255); 
+    offscreen2.noStroke();
+    offscreen2.text("ambuzzador's work of 10 years shown per minute of a single day: " + clock, 5, 30); //it is important to overwrite the text in each void draw loop - \n for newline
+    offscreen2.fill(133,133,0);
+    offscreen2.text("\noida", 5, 30); //newline
+    offscreen2.fill(255,0,0);
+    offscreen2.text("\nJFX", 60, 30);
+  offscreen2.endDraw();
+
   // render the scene, transformed using the corner pin surface
+  surface2.render(offscreen2);     
   surface.render(offscreen);     
 
  

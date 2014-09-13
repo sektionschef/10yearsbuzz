@@ -1,6 +1,7 @@
 input/
 export/
 data/
+backups/
 
 ## filetypes
 *.csv
@@ -8,3 +9,4 @@ data/
 *~
 *.swp
 *.swo
+*.bak
