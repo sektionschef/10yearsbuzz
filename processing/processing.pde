@@ -14,11 +14,13 @@ int height = 500; //height of canvas - 80
 
 
 String table_path = "lightup.csv"; //path to table with colors per element (columns) for each state (rows)
-int row_count = 0; //starting line of color csv table
+int row_count = 599; //starting line of color csv table
 //int[] element_names = new int[17]; // create array with element ids of svg
 int[] hue = new int[element_count]; //array for colour levels
 int whiteout = 100; //0-255 more brightness for the whole image
 
+PFont Font_bold;
+PFont Font_normal;
 
 String clock = "00:00"; // variable showing the time as strng
 int clock_sec =0; // number of seconds of the day (from the csv)
@@ -27,11 +29,7 @@ int wait = 5000; //delay for reach cycle
 // 2500 milliseconds for doing one day in 60 Minutes
 // 1250 milliseconds for one day in 30 Minutes
 // 1000 one per second
-// 500 fast
-
-
-
-
+// 500 fTageszeit 
 //Objects
 Keystone ks; //keystone
 CornerPinSurface surface; //keystone
@@ -59,7 +57,7 @@ void setup() {
   ks = new Keystone(this);
   surface = ks.createCornerPinSurface(width, height, 20); //height, width, distance grid
 
-  surface2 = ks.createCornerPinSurface(600, 100, 20);
+  surface2 = ks.createCornerPinSurface(800, 70, 20);
   surface2.moveTo(200, 0);
  
   // We need an offscreen buffer to draw the surface we
@@ -68,7 +66,7 @@ void setup() {
     // CornerPinSurface.
     // (The offscreen buffer can be P2D or P3D)
   offscreen = createGraphics(displayWidth, displayHeight, P3D);
-  offscreen2 = createGraphics(600, 100, P2D); //matching the Corner Pin Surface
+  offscreen2 = createGraphics(800, 70, P3D); //matching the Corner Pin Surface
 
   time = millis();//store the current time
 
@@ -84,12 +82,15 @@ for (int x = 0; x < element_count; x++) {
   //rect_a = canvas.getChild("e1"); //archive for getting child
   for (int i = 0; i < element_count; i++) { //get all the children at once
      element[i] = canvas.getChild(elementos[i]); // Initialize each object with the ID of the svg; convert it to string so it is accepted
-     //element[i].scale(0.5);// scale, which percentage
+     //element[i].scale(1.5);// scale, which percentage
      println(elementos[i]+ " element");
   }
 
   ramen = canvas.getChild("ramen");
-   
+  
+  Font_normal = createFont("Liberation Sans Regular", 16); 
+  Font_bold = createFont("Liberation Sans Bold", 16); 
+
   
   scheme = loadTable( table_path, "header");
   println(scheme.getRowCount() + " total rows in table"); //debug, Anzahl Rows
@@ -99,7 +100,6 @@ for (int x = 0; x < element_count; x++) {
 ///////////////////////////////// DRAW ////////////////////////////////
 //
 void draw() {
-  
   background(0); //background black, so there is nothing in the projection
  
   TableRow axel_row = scheme.getRow(row_count%scheme.getRowCount()); //initialize a single row manually chosen, use the modulo to restrict the row_count not exceeding the row count
@@ -127,6 +127,8 @@ void draw() {
   offscreen.beginDraw();
   
   // create a background rect so transparency works, otherwise the transparency of 0 is not fully transparent
+  
+//  offscreen.smooth(2); 
   offscreen.fill(0);
   offscreen.noStroke();
   offscreen.rect(0,0,width,height);
@@ -161,23 +163,32 @@ void draw() {
 
   offscreen2.beginDraw();
   // create the text box with the clock
+//    offscreen2.smooth(2);
     offscreen2.fill(0);
-    offscreen2.rect(0,0,600,100);
+    offscreen2.noStroke();
+    offscreen2.rect(0,0,800,70);
+    offscreen2.textFont(Font_normal);
     offscreen2.textSize(16);
     offscreen2.fill(255); 
-    offscreen2.noStroke();
-    offscreen2.text("ambuzzador's work of 10 years shown per minute of a single day: " + clock, 5, 30); //it is important to overwrite the text in each void draw loop - \n for newline
-    offscreen2.fill(133,133,0);
-    offscreen2.text("\noida", 5, 30); //newline
-    offscreen2.fill(255,0,0);
-    offscreen2.text("\nJFX", 60, 30);
+    offscreen2.text("Woran arbeiteten ambuzzador Gehirne die letzten Jahre exakt um " + clock + " Uhr?", 5, 30); //it is important to overwrite the text in each void draw loop - \n for newline
+    offscreen2.fill(unhex("ff1eaa15"));
+    offscreen2.text("\nBeratung", 5, 30); //newline
+    offscreen2.fill(unhex("ff4abdf6"));
+    offscreen2.text("\nJFX", 90, 30);
+    offscreen2.fill(unhex("ff0003ff"));
+    offscreen2.text("\nRed. Betreuung", 130, 30);
+    offscreen2.fill(unhex("fff7060c"));
+    offscreen2.text("\nProjektmanagement", 260, 30);
+    offscreen2.fill(unhex("fff21aec"));
+    offscreen2.text("\nContent Creation", 440, 30);
+    offscreen2.fill(unhex("ffffd600"));
+    offscreen2.text("\nKonzeption", 590, 30);
   offscreen2.endDraw();
 
   // render the scene, transformed using the corner pin surface
-  surface2.render(offscreen2);     
   surface.render(offscreen);     
+  surface2.render(offscreen2);     
 
- 
 }
 
 

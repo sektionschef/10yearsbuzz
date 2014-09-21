@@ -16,9 +16,16 @@ timeboard <- read.csv(file="timeboard.csv",head=TRUE) ##debug shortcut
 #areas <- data.frame(size = c(50,30,18,12,32,44,2,6,9,45,32,36,19,23,27,29,15,11,17,39,28,23,11,19,1,3,8,33,23,1,5,9,24,14,11,9,44,21))
 #areas$id <- paste("e",1:length(areas$size),sep="")
 
-
-number.areas.for.combinations <- 6 ##combinations of classes used for one category max:7
+#knapsack combinations
+number.areas.for.combinations <- 7 ##combinations of classes used for one category max:7
 number.of.classes <- 30 ##max: 30
+
+#
+#start.loop.lightup <- 1 ##for whole thing
+start.loop.lightup <- 600 
+#end.loop.lightup <- length(unique(timeboard$Minute)) ##for the whole thing
+end.loop.lightup <- 700
+
 
 category.colors <- data.frame(
 		category = c(
@@ -29,12 +36,12 @@ category.colors <- data.frame(
 		"Red. Leitung & Content Creation",
 		"Konzeption"),
 		color = c(
-		"FF813C63", #"FF62FC74" - #oberschiene
-		"FFFFFFFF", #FFFCF262  #white
-		"FFDAEEFA", #FF6289FC # blue
-		"FF3C2313", #FFBF62FC # brown
-		"FFDD0059", #FFFC8962 # magenta 
-		"FFFFAE00")) #FF62FCE3 # yellow dark
+		"ff1eaa15", # - grün | ff1b9e77
+		"ff4abdf6", #FFFFFFFF  - blau | ffd95f02
+		"ff0003ff", #FFDAEEFA - lila | ff7570b3
+		"fff7060c", #FFFFAE00 - rot | ffe7298a
+		"fff21aec", #FFDD0059 - magenta | ff66a61e
+		"ffffd600")) #FF813C63 - yellow | ffe6ab02
 
 
 
@@ -42,6 +49,7 @@ category.colors <- data.frame(
 # Input Zeiten laden
 leistungen <- read.csv(file="input/volle_leistung.csv",head=TRUE,sep=";")
 names(leistungen) <- sub(" ", ".", names(leistungen)) ## replace spaces in column names
+#length(leistungen) ##debug info
 
 #load sizes of canvas elements
 areas <- read.csv(file="calculate size/areas.csv",head=TRUE)
@@ -216,9 +224,10 @@ knappsackn <- function(target,areas.removed) { #finding optimal areas for each c
 #debug(knappsackn) ##debug
 #timeboard[timeboard$Minute==361,] ##debug
 
-counter <- 0 ## counting the rows of timeboard for adressing the categories correctly - works only for loop starting at 1
-#for (i in 600:1000) { #debug 
-for (i in 1:length(unique(timeboard$Minute))) { # per Minute - loop since knappsackn function needs one value not a vector like in lapply
+ 
+counter <- which(timeboard$Minute==(start.loop.lightup-1))[1]-1  ## counting the rows of timeboard for adressing the categories correctly. finds the row index of the startup value - starts at 0
+
+for (i in start.loop.lightup:end.loop.lightup) { # per Minute - loop since knappsackn function needs one value not a vector like in lapply
 	areas.removed <- areas.consolidate() # initialize the areas. all areas are available for a new minute
 	areas.selected <- vector() # create new vector for the selected elements
 	
@@ -236,7 +245,7 @@ for (i in 1:length(unique(timeboard$Minute))) { # per Minute - loop since knapps
 		lightup[lightup$Minute==i-1,selected.elements] <- as.character(category.colors[timeboard$Kategorie[counter] == category.colors$category, "color"]) ## new line adding the colors per category for each line- NEW
 		areas.removed <- as.vector(returned.list[[2]]) #the remaining areas
 		
-		#print(counter)
+		print(counter)
 		print(paste("Minute: ",i-1," category: ",timeboard$Kategorie[counter],". Summe: ",timeboard[timeboard$Minute==i-1,"Normzahl"][[a]]," selected elements: ",length(selected.elements) , sep="")) ##debug
 	}
 }

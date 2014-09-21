@@ -22,8 +22,10 @@ get.polyordinates <- function(xml,id) {
 	polyordinates
 }
 #polyordinates <- get.polyordinates(xml.data,ids[1])
+#debug(get.polyordinates)
 
 polyordinates <- sapply(areas$id, function(i) get.polyordinates(xml.data,i))
+
 #polyordinates ##debug
 
 #polyordinates[[2]] ##debug - 1161.861270523501 für e2
