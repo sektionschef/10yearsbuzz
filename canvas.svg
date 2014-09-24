@@ -26,13 +26,13 @@
      inkscape:pageshadow="2"
      inkscape:zoom="1.98"
      inkscape:cx="384.88499"
-     inkscape:cy="835.77642"
+     inkscape:cy="997.39258"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
-     inkscape:window-width="1863"
-     inkscape:window-height="1176"
-     inkscape:window-x="57"
+     inkscape:window-width="1305"
+     inkscape:window-height="744"
+     inkscape:window-x="61"
      inkscape:window-y="24"
      inkscape:window-maximized="1" />
   <metadata
@@ -54,9 +54,10 @@
     <path
        style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        d="M 72.730984,26.047196 710.13724,36.148722 730.34029,445.26051 63.134535,446.27065 z"
-       id="path2985"
+       id="ramen"
        inkscape:connector-curvature="0"
-       sodipodi:nodetypes="ccccc" />
+       sodipodi:nodetypes="ccccc"
+       inkscape:label="#path2985" />
     <path
        style="fill:#ffffff;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        d="M 217.1828,57.361925 207.08127,67.968527 209.60665,87.161425 223.24371,79.585281 242.94169,80.595433 254.05337,81.605586 279.30718,81.605586 277.79195,72.009137 278.29703,65.443145 238.396,63.927916 229.30463,63.927916 z"

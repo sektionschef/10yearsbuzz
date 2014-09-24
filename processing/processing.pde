@@ -3,6 +3,9 @@ import deadpixel.keystone.*; //keystone library
 
 
 //variables
+int row_count = 1198; //starting line of color csv table - start time - 480
+int row_end = 1200; //end time - 1200
+
 String svg_path = "canvas.svg"; //path to svg of canvas
 int element_count = 133;// number of elements in svg, mind that the loop starts at 0 - 133 elements in total
 
@@ -14,7 +17,6 @@ int height = 500; //height of canvas - 80
 
 
 String table_path = "lightup.csv"; //path to table with colors per element (columns) for each state (rows)
-int row_count = 599; //starting line of color csv table
 //int[] element_names = new int[17]; // create array with element ids of svg
 int[] hue = new int[element_count]; //array for colour levels
 int whiteout = 100; //0-255 more brightness for the whole image
@@ -38,6 +40,9 @@ PGraphics offscreen;
 CornerPinSurface surface2;
 PGraphics offscreen2;
 
+CornerPinSurface surface3;
+PGraphics offscreen3;
+
 Table scheme; //table, load csv
 
 
@@ -59,7 +64,11 @@ void setup() {
 
   surface2 = ks.createCornerPinSurface(800, 70, 20);
   surface2.moveTo(200, 0);
+
  
+  surface3 = ks.createCornerPinSurface(400, 70, 20);
+  surface3.moveTo(200, 500);
+
   // We need an offscreen buffer to draw the surface we
     // want projected
     // note that we're matching the resolution of the
@@ -67,6 +76,7 @@ void setup() {
     // (The offscreen buffer can be P2D or P3D)
   offscreen = createGraphics(displayWidth, displayHeight, P3D);
   offscreen2 = createGraphics(800, 70, P3D); //matching the Corner Pin Surface
+  offscreen3 = createGraphics(400, 70, P3D);
 
   time = millis();//store the current time
 
@@ -103,8 +113,13 @@ void draw() {
   background(0); //background black, so there is nothing in the projection
  
   TableRow axel_row = scheme.getRow(row_count%scheme.getRowCount()); //initialize a single row manually chosen, use the modulo to restrict the row_count not exceeding the row count
-  //println(axel_row); //debug
+// println(axel_row); //debug
 
+  // if there is a start and end time circle, we need a loop not %scheme.getRowCount()
+  for (int i = row_count; i <= row_end; i++) {
+//    TableRow axel_row = scheme.getRow(i);
+    println(i);
+  }
 
   if(millis() - time >= wait){ //delay loop
     //println("tick");
@@ -128,7 +143,7 @@ void draw() {
   
   // create a background rect so transparency works, otherwise the transparency of 0 is not fully transparent
   
-//  offscreen.smooth(2); 
+  offscreen.smooth(8); 
   offscreen.fill(0);
   offscreen.noStroke();
   offscreen.rect(0,0,width,height);
@@ -163,7 +178,7 @@ void draw() {
 
   offscreen2.beginDraw();
   // create the text box with the clock
-//    offscreen2.smooth(2);
+    offscreen2.smooth(8);
     offscreen2.fill(0);
     offscreen2.noStroke();
     offscreen2.rect(0,0,800,70);
@@ -185,10 +200,27 @@ void draw() {
     offscreen2.text("\nKonzeption", 590, 30);
   offscreen2.endDraw();
 
+
+
+  offscreen3.beginDraw();
+  // create the text box with the clock
+    offscreen3.smooth(8);
+    offscreen3.fill(0);
+    offscreen3.noStroke();
+    offscreen3.rect(0,0,400,70);
+    offscreen3.textFont(Font_normal);
+    offscreen3.textSize(12);
+    offscreen3.fill(255); 
+    offscreen3.text("Stefan Schwaha - @sektionschef", 5, 30); //it is important to overwrite the text in each void draw loop - \n for newline
+  offscreen3.endDraw();
+
+
+
+
   // render the scene, transformed using the corner pin surface
   surface.render(offscreen);     
   surface2.render(offscreen2);     
-
+  surface3.render(offscreen3);
 }
 
 

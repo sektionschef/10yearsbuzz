@@ -21,10 +21,10 @@ number.areas.for.combinations <- 7 ##combinations of classes used for one catego
 number.of.classes <- 30 ##max: 30
 
 #
-#start.loop.lightup <- 1 ##for whole thing
-start.loop.lightup <- 600 
-#end.loop.lightup <- length(unique(timeboard$Minute)) ##for the whole thing
-end.loop.lightup <- 700
+start.loop.lightup <- 1 ##for whole thing
+#start.loop.lightup <- 600 
+end.loop.lightup <- length(unique(timeboard$Minute)) ##for the whole thing
+#end.loop.lightup <- 700
 
 
 category.colors <- data.frame(
