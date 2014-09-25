@@ -3,8 +3,9 @@ import deadpixel.keystone.*; //keystone library
 
 
 //variables
-int row_count = 1198; //starting line of color csv table - start time - 480
+int row_start = 480; // start time  - 480
 int row_end = 1200; //end time - 1200
+int row_count = row_start; //starting line of color csv table - equals start time - 480
 
 String svg_path = "canvas.svg"; //path to svg of canvas
 int element_count = 133;// number of elements in svg, mind that the loop starts at 0 - 133 elements in total
@@ -115,15 +116,17 @@ void draw() {
   TableRow axel_row = scheme.getRow(row_count%scheme.getRowCount()); //initialize a single row manually chosen, use the modulo to restrict the row_count not exceeding the row count
 // println(axel_row); //debug
 
-  // if there is a start and end time circle, we need a loop not %scheme.getRowCount()
-  for (int i = row_count; i <= row_end; i++) {
-//    TableRow axel_row = scheme.getRow(i);
-    println(i);
-  }
 
   if(millis() - time >= wait){ //delay loop
     //println("tick");
-    row_count+=1; 
+
+    if(row_count+1 > row_end) { //if end is reach start all over
+      row_count=row_start-1;
+//      println(row_count);
+    }
+
+    row_count+=1; //for the whole cycle - beginning to end
+    
     time = millis();//update the stored time
   
 
@@ -131,7 +134,7 @@ void draw() {
     clock = nf(clock_sec/60,2,0) + ":" + nf(clock_sec%60,2,0); 
     //println("Clock: " + clock);
   }
-  
+
   // get the values for each row
   for (int i = 0; i < element_count; i++) { //for each element  
     hue[i] = unhex(axel_row.getString(i+2)); //get value from each column and write it in an array; getString for unhexing; mode is ARGB! so put "ff in front for full colour (in format "ff"+"2d495e") 
