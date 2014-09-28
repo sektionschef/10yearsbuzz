@@ -1,6 +1,0 @@
-
-> summary(selected.diff)
-      Min.    1st Qu.     Median       Mean    3rd Qu.       Max. 
--1.5390000 -0.0010370  0.0000001  0.0017040  0.0009036  1.9850000 
-
-> sink()

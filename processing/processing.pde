@@ -4,7 +4,7 @@ import deadpixel.keystone.*; //keystone library
 
 //variables
 int row_start = 480; // start time  - 480
-int row_end = 1200; //end time - 1200
+int row_end = 1140; //end time - 1200
 int row_count = row_start; //starting line of color csv table - equals start time - 480
 
 String svg_path = "canvas.svg"; //path to svg of canvas
@@ -13,8 +13,8 @@ int element_count = 133;// number of elements in svg, mind that the loop starts 
 //temp
 String[] elementos = new String[element_count];
 
-int width = 800; //width of canvas - 120
-int height = 500; //height of canvas - 80
+int width = 680; //width of canvas - 120 | 800
+int height = 430; //height of canvas - 80 | 500
 
 
 String table_path = "lightup.csv"; //path to table with colors per element (columns) for each state (rows)
@@ -93,7 +93,7 @@ for (int x = 0; x < element_count; x++) {
   //rect_a = canvas.getChild("e1"); //archive for getting child
   for (int i = 0; i < element_count; i++) { //get all the children at once
      element[i] = canvas.getChild(elementos[i]); // Initialize each object with the ID of the svg; convert it to string so it is accepted
-     //element[i].scale(1.5);// scale, which percentage
+     //element[i].scale(0.75);// scale, which percentage
      println(elementos[i]+ " element");
   }
 
@@ -186,7 +186,7 @@ void draw() {
     offscreen2.noStroke();
     offscreen2.rect(0,0,800,70);
     offscreen2.textFont(Font_normal);
-    offscreen2.textSize(16);
+    offscreen2.textSize(20);
     offscreen2.fill(255); 
     offscreen2.text("Woran arbeiteten ambuzzador Gehirne die letzten Jahre exakt um " + clock + " Uhr?", 5, 30); //it is important to overwrite the text in each void draw loop - \n for newline
     offscreen2.fill(unhex("ff1eaa15"));
